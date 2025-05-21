@@ -61,29 +61,36 @@ const Login: React.FC = () => {
       }
     }, { scope: 'email,public_profile' });
   };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
-        </div>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">{error}</span>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <div className="h-12 w-12 rounded-md bg-primary-600 flex items-center justify-center">
+            <span className="text-white font-bold text-xl">V</span>
           </div>
-        )}
+        </div>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Sign in to your account
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Don't have an account?{' '}
+          <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
+            Sign up for free
+          </Link>
+        </p>
+      </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email-address" className="sr-only">Email address</label>
-              <div className="flex items-center">
-                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                  <FaEnvelope />
-                </span>
-                <input
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          
+          {error && (
+            <div className="mb-4 bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded relative" role="alert">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+          
+          <form className="space-y-6" onSubmit={handleSubmit}>
+              <input
                   id="email-address"
                   type="email"
                   required
@@ -92,14 +99,8 @@ const Login: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-              </div>
-            </div>
-            <div className="mt-4">
-              <label htmlFor="password" className="sr-only">Password</label>
-              <div className="flex items-center">
-                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                  <FaLock />
-                </span>
+            
+            <div>
                 <input
                   id="password"
                   type="password"
@@ -109,19 +110,14 @@ const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+              <div className="text-right mt-1">
+                <Link to="/forgot-password" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+                  Forgot your password?
+                </Link>
               </div>
             </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Forgot your password?
-              </Link>
-            </div>
-          </div>
-
-          <div>
+            
+            <div>
             <button
               type="submit"
               disabled={loading}
@@ -129,28 +125,32 @@ const Login: React.FC = () => {
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
-          </div>
+            </div>
+          </form>
 
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+                <span className="px-2 bg-white text-gray-500">
+                  Or continue with
+                </span>
               </div>
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <div>
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => {
-                    setError('Google login failed');
-                  }}
-                  useOneTap
-                />
-              </div>
+                          <div>
+                            <GoogleLogin
+                              onSuccess={handleGoogleSuccess}
+                              onError={() => {
+                                setError('Google login failed');
+                              }}
+                              useOneTap
+                            />
+                          </div>
+
               <div>
                 <button
                   type="button"
@@ -163,15 +163,6 @@ const Login: React.FC = () => {
               </div>
             </div>
           </div>
-        </form>
-
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Sign up
-            </Link>
-          </p>
         </div>
       </div>
     </div>

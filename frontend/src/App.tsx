@@ -5,9 +5,11 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Navbar } from './components/navigation/Navbar';
 import { Footer } from './components/navigation/Footer';
 import { Landing } from './pages/Landing';
-import  Login from './pages/Login';
+import  Login  from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import ForgotPassword from './pages/ForgotPassword';
+
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -36,6 +38,7 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Signup />} />
+
       
       {/* Protected routes */}
       <Route 
