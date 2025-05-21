@@ -1,8 +1,90 @@
-function App() {
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Navbar } from './components/navigation/Navbar';
+import { Footer } from './components/navigation/Footer';
+import { Landing } from './pages/Landing';
+import  Login from './pages/Login';
+import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
+
+// Protected route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser, loading } = useAuth();
+  
+  if (loading) {
+    // Display a loading spinner while checking auth status
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+  
+  return currentUser ? (
+    <>{children}</>
+  ) : (
+    <Navigate to="/login" replace />
+  );
+};
+
+function AppRoutes() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 text-3xl font-bold text-blue-600">
-      Tailwind + React + TypeScript + Vite works!
-    </div>
+    <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Signup />} />
+      
+      {/* Protected routes */}
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Fallback route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <Navbar />
+        <main className="min-h-screen">
+          <AppRoutes />
+        </main>
+        <Footer />
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#fff',
+              color: '#333',
+            },
+            success: {
+              style: {
+                border: '1px solid #22c55e',
+              },
+            },
+            error: {
+              style: {
+                border: '1px solid #ef4444',
+              },
+            },
+          }}
+        />
+      </AuthProvider>
+    </Router>
+  );
+}
+
 export default App;
