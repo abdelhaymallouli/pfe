@@ -22,7 +22,8 @@ echo json_encode([
         "/api/verify.php" => "Verify user account with token",
         "/api/verify_auth.php" => "Verify authentication token",
         "/api/request_reset.php" => "Request password reset",
-        "/api/reset_password.php" => "Reset password with token"
-    ]
+        "/api/reset_password.php" => "Reset password with token",
+        "/api/events.php" => "Manage events (GET: list, POST: create)"
+        ]
 ]);
 ?>

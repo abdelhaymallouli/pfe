@@ -6,18 +6,17 @@ import { useAuth } from '../../contexts/AuthContext';
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const location = useLocation();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleProfile = () => setIsProfileOpen(!isProfileOpen);
   const closeMenu = () => setIsMenuOpen(false);
 
-  const handleSignOut = () => {
-    setIsProfileOpen(false);
-    localStorage.removeItem('venuvibe_user');
-    window.location.href = '/login';
+  const handleLogout = () => {
+    logout();
   };
+
 
   // Links for authenticated users
   const authLinks = [
@@ -114,7 +113,7 @@ export const Navbar = () => {
                       <button
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         role="menuitem"
-                        onClick={handleSignOut}
+                        onClick={handleLogout}
                       >
                         Sign out
                       </button>
@@ -209,7 +208,7 @@ export const Navbar = () => {
                 </Link>
                 <button
                   className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                  onClick={handleSignOut}
+                  onClick={handleLogout}
                 >
                   Sign out
                 </button>

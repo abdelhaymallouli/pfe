@@ -8,7 +8,11 @@ import { Landing } from './pages/Landing';
 import  Login  from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
-import ForgotPassword from './pages/ForgotPassword';
+import { EventList } from './pages/events/EventList'; 
+import { EventForm } from './pages/events/EventForm';
+import { VendorList } from './pages/vendors/VendorList';
+
+
 
 
 // Protected route component
@@ -49,7 +53,34 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
-      
+
+      <Route 
+        path="/events" 
+        element={
+          <ProtectedRoute>
+            <EventList />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/events/new" 
+        element={
+          <ProtectedRoute>
+            <EventForm />
+          </ProtectedRoute>
+        } 
+      />
+
+
+      <Route 
+        path="/vendors" 
+        element={
+          <ProtectedRoute>
+            <VendorList />
+          </ProtectedRoute>
+        } 
+      />
       {/* Fallback route */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

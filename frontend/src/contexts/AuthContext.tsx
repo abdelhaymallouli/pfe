@@ -14,8 +14,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<any>;
   register: (username: string, email: string, password: string, confirmPassword: string) => Promise<any>;
   logout: () => void;
-  requestPasswordReset: (email: string) => Promise<any>;
-  resetPassword: (token: string, password: string, confirmPassword: string) => Promise<any>;
   googleLogin: (tokenResponse: any) => Promise<any>;
   facebookLogin: (response: any) => Promise<any>;
   getOAuthProviders: () => Promise<any>;
@@ -53,19 +51,13 @@ const login = async (email: string, password: string) => {
     return OAuthService.register(username, email, password, confirmPassword);
   };
 
-const logout = () => {
-  OAuthService.logout();
-  setCurrentUser(null);
-};
-
-
-  const requestPasswordReset = async (email: string) => {
-    return OAuthService.requestPasswordReset(email);
+  const logout = () => {
+    OAuthService.logout();               // Clear server/session/token-side
+    setCurrentUser(null);                // Reset local user state
+    localStorage.removeItem('venuvibe_user');     // Clear stored user data
   };
+  
 
-  const resetPassword = async (token: string, password: string, confirmPassword: string) => {
-    return OAuthService.resetPassword(token, password, confirmPassword);
-  };
 
   const googleLogin = async (tokenResponse: any) => {
     try {
@@ -99,6 +91,7 @@ const logout = () => {
     return OAuthService.unlinkOAuthProvider(provider);
   };
 
+
   const value = {
     currentUser,
     isLoggedIn: !!currentUser,
@@ -106,13 +99,11 @@ const logout = () => {
     login,
     register,
     logout,
-    requestPasswordReset,
-    resetPassword,
     googleLogin,
     facebookLogin,
     getOAuthProviders,
     linkOAuthProvider,
-    unlinkOAuthProvider
+    unlinkOAuthProvider,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

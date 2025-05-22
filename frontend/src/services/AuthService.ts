@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/VenuVibe--A-Personalized-Event-Planning-Platform/backend/src/api/';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/pfe/backend/src/api/';
 
 // Authentication service
 // Authentication service
@@ -51,7 +51,8 @@ const AuthService = {
 
   isLoggedIn: () => {
     return !!localStorage.getItem('user');
-  }
+  },
+
 };
 
 
