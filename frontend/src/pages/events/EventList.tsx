@@ -30,11 +30,15 @@ export const EventList = () => {
     fetch('http://localhost/pfe/backend/src/api/events.php')
       .then(async (res) => {
         const text = await res.text();
-        console.log('Raw response:', text); // <--- Check what server sent
         if (!res.ok) throw new Error('Network response was not ok');
         try {
-          const data = JSON.parse(text);
-          setEvents(data);
+            const data = JSON.parse(text);
+            if (data.success && Array.isArray(data.data)) {
+              setEvents(data.data);
+            } else {
+              throw new Error('Invalid response structure');
+            }
+
         } catch {
           throw new Error('Response is not valid JSON');
         }

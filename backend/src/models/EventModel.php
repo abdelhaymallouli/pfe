@@ -1,41 +1,98 @@
 <?php
 class EventModel {
     private $pdo;
+    private $table = 'events';
 
     public function __construct($pdo) {
         $this->pdo = $pdo;
     }
 
     public function getAllEvents() {
-        $stmt = $this->pdo->prepare("SELECT * FROM events");
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT e.*, 
+                       GROUP_CONCAT(DISTINCT v.name) as vendor_names,
+                       COUNT(DISTINCT t.id) as task_count
+                FROM events e 
+                LEFT JOIN event_vendors ev ON e.id = ev.event_id 
+                LEFT JOIN vendors v ON ev.vendor_id = v.id 
+                LEFT JOIN tasks t ON e.id = t.event_id 
+                GROUP BY e.id 
+                ORDER BY e.created_at DESC
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Database error in getAllEvents: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function createEvent($data) {
-        $sql = "INSERT INTO " . $this->table . " 
-            (user_id, title, type, date, location, theme, description, expectedGuests, bannerImage)
-            VALUES 
-            (:user_id, :title, :type, :date, :location, :theme, :description, :expectedGuests, :bannerImage)";
-    
-        $stmt = $this->conn->prepare($sql);
-    
-        // Bind parameters
-        $stmt->bindParam(':user_id', $data['user_id'], PDO::PARAM_INT);
-        $stmt->bindParam(':title', $data['title']);
-        $stmt->bindParam(':type', $data['type']);
-        $stmt->bindParam(':date', $data['date']); // make sure date is in correct format (YYYY-MM-DD or DATETIME)
-        $stmt->bindParam(':location', $data['location']);
-        $stmt->bindParam(':theme', $data['theme']);
-        $stmt->bindParam(':description', $data['description']);
-        $stmt->bindParam(':expectedGuests', $data['expectedGuests'], PDO::PARAM_INT);
-        $stmt->bindParam(':bannerImage', $data['bannerImage']);
-    
-        if ($stmt->execute()) {
-            return $this->conn->lastInsertId();
-        } else {
+        try {
+            $sql = "INSERT INTO {$this->table} 
+                   (user_id, title, type, theme, date, location, bannerImage, description, expectedGuests)
+                   VALUES 
+                   (:user_id, :title, :type, :theme, :date, :location, :bannerImage, :description, :expectedGuests)";
+
+            $stmt = $this->pdo->prepare($sql);
+
+            // Convert expectedGuests to integer if it's a string
+            $expectedGuests = is_string($data['expectedGuests']) ? 
+                             intval($data['expectedGuests']) : 
+                             $data['expectedGuests'];
+
+            $result = $stmt->execute([
+                ':user_id' => $data['user_id'],
+                ':title' => $data['title'],
+                ':type' => $data['type'],
+                ':theme' => $data['theme'] ?? '',
+                ':date' => $data['date'],
+                ':location' => $data['location'],
+                ':bannerImage' => $data['bannerImage'] ?? '',
+                ':description' => $data['description'] ?? '',
+                ':expectedGuests' => $expectedGuests
+            ]);
+
+            if ($result) {
+                return $this->pdo->lastInsertId();
+            }
+            return false;
+        } catch (PDOException $e) {
+            error_log("Database error in createEvent: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function addVendorToEvent($eventId, $vendorId) {
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO event_vendors (event_id, vendor_id) VALUES (?, ?)");
+            return $stmt->execute([$eventId, $vendorId]);
+        } catch (PDOException $e) {
+            error_log("Database error in addVendorToEvent: " . $e->getMessage());
             return false;
         }
     }
-    
+
+    public function addTask($eventId, $title) {
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO tasks (event_id, title) VALUES (?, ?)");
+            return $stmt->execute([$eventId, $title]);
+        } catch (PDOException $e) {
+            error_log("Database error in addTask: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getAllVendors() {
+        try {
+            $stmt = $this->pdo->prepare("SELECT * FROM vendors ORDER BY name");
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Database error in getAllVendors: " . $e->getMessage());
+            throw $e;
+        }
+    }
 }
+?>
