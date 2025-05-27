@@ -1,6 +1,4 @@
-// EventForm.tsx (Fixed version with proper backend integration)
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,87 +9,71 @@ import {
   FileText,
   Users,
   Palette,
-  Home,
-  Trees as Tree,
-  Building2,
-  Waves,
-  MapPinOff,
   ChevronLeft,
   ChevronRight,
   Check,
   Star,
-  DollarSign,
   Search,
-  X
+  X,
+  Loader,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { useAuth } from '../../contexts/AuthContext';
 
 const eventSchema = z.object({
   title: z.string().min(1, 'Event name is required'),
   type: z.string().min(1, 'Event type is required'),
-  date: z.string().min(1, 'Date is required'),
+  date: z.string().min(1, 'Date is required').transform(val => new Date(val).toISOString().split('T')[0]), // Format to YYYY-MM-DD
   location: z.string().min(1, 'Location is required'),
   theme: z.string().optional().default(''),
   description: z.string().optional().default(''),
-  expectedGuests: z.string().transform(val => parseInt(val, 10))
+  expectedGuests: z.string().transform(val => parseInt(val, 10)).refine(val => val >= 0, {
+    message: 'Expected guests must be a positive number',
+  }),
+  bannerImage: z.instanceof(File).optional().nullable(),
 });
 
 type EventFormValues = z.infer<typeof eventSchema>;
 
-const mockVendors = [
-  {
-    id: '1',
-    name: 'Gourmet Delights',
-    type: 'Catering',
-    rating: 4.8,
-    price: 2500,
-    location: 'Downtown',
-    description: 'Premium catering service for all occasions',
-    image: 'https://images.pexels.com/photos/5908226/pexels-photo-5908226.jpeg'
-  },
-  {
-    id: '2',
-    name: 'Floral Fantasy',
-    type: 'Decoration',
-    rating: 4.7,
-    price: 1500,
-    location: 'Westside',
-    description: 'Beautiful floral arrangements and event decoration',
-    image: 'https://images.pexels.com/photos/2111171/pexels-photo-2111171.jpeg'
-  },
-  {
-    id: '3',
-    name: 'Rhythm Masters',
-    type: 'Music',
-    rating: 4.9,
-    price: 1800,
-    location: 'Citywide',
-    description: 'Professional DJ and live music services',
-    image: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg'
-  }
-];
-
-const locationTemplates = [
-  { id: 'home', name: 'Home', icon: Home, description: 'Perfect for intimate gatherings' },
-  { id: 'garden', name: 'Public Garden', icon: Tree, description: 'Beautiful outdoor settings' },
-  { id: 'banquet', name: 'Banquet Hall', icon: Building2, description: 'Ideal for large events' },
-  { id: 'beach', name: 'Beach', icon: Waves, description: 'Scenic coastal locations' },
-  { id: 'other', name: 'Other', icon: MapPinOff, description: 'Custom venue of your choice' }
-];
+interface Vendor {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  rating: number;
+  price?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  website?: string;
+  image: string;
+  phone?: string;
+  email?: string;
+}
 
 export const EventForm = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth(); 
   const [currentStep, setCurrentStep] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([]);
+  const [isLoadingVendors, setIsLoadingVendors] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [bannerImage, setBannerImage] = useState<File | null>(null);
+  const [bannerImagePreview, setBannerImagePreview] = useState<string>('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   const [eventData, setEventData] = useState({
     basicInfo: null as EventFormValues | null,
-    locationTemplate: '',
-    selectedVendors: [] as typeof mockVendors,
+    selectedVendors: [] as Vendor[],
     vendorTasks: {} as Record<string, { id: string; title: string; completed: boolean }[]>,
-    budget: 10000
+    budget: 10000,
+    bannerImageUrl: '',
   });
 
   const { register, handleSubmit, formState: { errors } } = useForm<EventFormValues>({
@@ -104,40 +86,137 @@ export const EventForm = () => {
       theme: '',
       description: '',
       expectedGuests: 0,
+      bannerImage: null,
     },
   });
 
-  const handleBasicInfoSubmit = (data: EventFormValues) => {
-    setEventData(prev => ({ ...prev, basicInfo: data }));
+  const handleBannerImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file (PNG, JPG, or GIF)');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size must be less than 5MB');
+        return;
+      }
+      setBannerImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setBannerImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadBannerImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('banner_image', file);
+    try {
+      const response = await fetch('http://localhost/pfe/backend/src/api/upload_image.php', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to upload image');
+      }
+      return result.image_url;
+    } catch (error) {
+      throw new Error(`Image upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const removeBannerImage = () => {
+    setBannerImage(null);
+    setBannerImagePreview('');
+    setEventData(prev => ({ ...prev, bannerImageUrl: '' }));
+  };
+
+  useEffect(() => {
+    const fetchVendors = async () => {
+      setIsLoadingVendors(true);
+      try {
+        const response = await fetch('http://localhost/pfe/backend/src/api/vendor.php');
+        if (!response.ok) {
+          throw new Error('Failed to fetch vendors');
+        }
+        const data = await response.json();
+        const vendorData = Array.isArray(data) ? data : (data.data || data.vendors || []);
+        setVendors(vendorData);
+        setFilteredVendors(vendorData);
+      } catch (error) {
+        console.error('Error fetching vendors:', error);
+        alert('Failed to load vendors. Please try again later.');
+        setVendors([]);
+        setFilteredVendors([]);
+      } finally {
+        setIsLoadingVendors(false);
+      }
+    };
+    fetchVendors();
+  }, []);
+
+  useEffect(() => {
+    let filtered = vendors;
+    if (searchTerm) {
+      filtered = filtered.filter(vendor =>
+        vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        vendor.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (selectedCategory) {
+      filtered = filtered.filter(vendor =>
+        vendor.category.toLowerCase() === selectedCategory.toLowerCase()
+      );
+    }
+    setFilteredVendors(filtered);
+  }, [vendors, searchTerm, selectedCategory]);
+
+  const handleBasicInfoSubmit = async (data: EventFormValues) => {
+    let bannerImageUrl = '';
+    if (bannerImage) {
+      setIsUploadingImage(true);
+      try {
+        bannerImageUrl = await uploadBannerImage(bannerImage);
+      } catch (error) {
+        console.error('Error uploading banner image:', error);
+        alert(error instanceof Error ? error.message : 'Failed to upload banner image. Please try again.');
+        setIsUploadingImage(false);
+        return;
+      }
+      setIsUploadingImage(false);
+    }
+    setEventData(prev => ({
+      ...prev,
+      basicInfo: { ...data, bannerImage: null },
+      bannerImageUrl,
+    }));
     setCurrentStep(2);
   };
 
-  const selectLocationTemplate = (templateId: string) => {
-    setEventData(prev => ({ ...prev, locationTemplate: templateId }));
-  };
-
-  const toggleVendor = (vendor: typeof mockVendors[0]) => {
+  const toggleVendor = (vendor: Vendor) => {
     setEventData(prev => {
       const isSelected = prev.selectedVendors.some(v => v.id === vendor.id);
       const newVendors = isSelected
         ? prev.selectedVendors.filter(v => v.id !== vendor.id)
         : [...prev.selectedVendors, vendor];
-
       const newTasks = { ...prev.vendorTasks };
       if (!isSelected) {
+        const timestamp = Date.now();
         newTasks[vendor.id] = [
-          { id: '1', title: `Confirm details with ${vendor.name}`, completed: false },
-          { id: '2', title: `Review contract from ${vendor.name}`, completed: false },
-          { id: '3', title: `Make initial payment to ${vendor.name}`, completed: false }
+          { id: `${vendor.id}-${timestamp}-1`, title: `Confirm details with ${vendor.name}`, completed: false },
+          { id: `${vendor.id}-${timestamp}-2`, title: `Review contract from ${vendor.name}`, completed: false },
+          { id: `${vendor.id}-${timestamp}-3`, title: `Make initial payment to ${vendor.name}`, completed: false },
         ];
       } else {
         delete newTasks[vendor.id];
       }
-
       return {
         ...prev,
         selectedVendors: newVendors,
-        vendorTasks: newTasks
+        vendorTasks: newTasks,
       };
     });
   };
@@ -148,10 +227,10 @@ export const EventForm = () => {
       vendorTasks: {
         ...prev.vendorTasks,
         [vendorId]: [
-          ...prev.vendorTasks[vendorId],
-          { id: Date.now().toString(), title: taskTitle, completed: false }
-        ]
-      }
+          ...(prev.vendorTasks[vendorId] || []),
+          { id: `${vendorId}-${Date.now()}`, title: taskTitle, completed: false },
+        ],
+      },
     }));
   };
 
@@ -160,8 +239,8 @@ export const EventForm = () => {
       ...prev,
       vendorTasks: {
         ...prev.vendorTasks,
-        [vendorId]: prev.vendorTasks[vendorId].filter(task => task.id !== taskId)
-      }
+        [vendorId]: prev.vendorTasks[vendorId].filter(task => task.id !== taskId),
+      },
     }));
   };
 
@@ -172,56 +251,58 @@ export const EventForm = () => {
         ...prev.vendorTasks,
         [vendorId]: prev.vendorTasks[vendorId].map(task =>
           task.id === taskId ? { ...task, completed: !task.completed } : task
-        )
-      }
+        ),
+      },
     }));
   };
 
-  const getTotalBudget = () => {
-    return eventData.selectedVendors.reduce((total, vendor) => total + vendor.price, 0);
-  };
-
-  const getBudgetPercentage = () => {
-    return (getTotalBudget() / eventData.budget) * 100;
+  const getUniqueCategories = () => {
+    return Array.from(new Set(vendors.map(vendor => vendor.category)));
   };
 
   const handleCreateEvent = async () => {
     if (!eventData.basicInfo) {
-      alert('Basic event information is missing');
+      alert('Please complete the basic event information');
+      return;
+    }
+
+    if (!currentUser?.id) {
+      alert('User not authenticated. Please log in.');
+      navigate('/login');
       return;
     }
 
     setIsCreating(true);
-
     try {
-      // Prepare the payload to match PHP backend expectations
       const payload = {
-        user_id: 1, // TODO: Replace with actual logged-in user ID
+        user_id: currentUser.id,
         title: eventData.basicInfo.title,
         type: eventData.basicInfo.type,
         theme: eventData.basicInfo.theme || '',
         date: eventData.basicInfo.date,
         location: eventData.basicInfo.location,
-        bannerImage: '', // Empty string as default
+        bannerImage: eventData.bannerImageUrl || '',
         description: eventData.basicInfo.description || '',
         expectedGuests: eventData.basicInfo.expectedGuests,
-        vendors: eventData.selectedVendors.map(v => parseInt(v.id)),
-        tasks: Object.values(eventData.vendorTasks).flat().map(t => ({ title: t.title }))
+        budget: eventData.budget,
+        vendors: eventData.selectedVendors.map(v => v.id),
+        tasks: Object.values(eventData.vendorTasks).flat().map(t => ({
+          title: t.title,
+          completed: t.completed,
+        })),
       };
 
       console.log('Sending payload:', payload);
 
       const response = await fetch('http://localhost/pfe/backend/src/api/events.php', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
-      console.log('Response status:', response.status);
-      
       const responseText = await response.text();
       console.log('Raw response:', responseText);
 
@@ -229,20 +310,19 @@ export const EventForm = () => {
       try {
         result = JSON.parse(responseText);
       } catch (parseError) {
-        console.error('Failed to parse JSON response:', parseError);
-        throw new Error('Invalid response format from server');
+        throw new Error(`Invalid response from server: ${responseText}`);
       }
 
       if (response.ok && result.success) {
         alert('Event created successfully!');
         navigate('/events');
       } else {
-        console.error('Server error:', result);
-        alert(`Error creating event: ${result.message || 'Unknown error occurred'}`);
+        throw new Error(result.message || 'Unknown server error');
       }
     } catch (error) {
-      console.error('Network or parsing error:', error);
-      alert(`Failed to create event: ${error.message || 'Network error occurred'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
+      console.error('Error creating event:', error);
+      alert(`Failed to create event: ${errorMessage}`);
     } finally {
       setIsCreating(false);
     }
@@ -265,7 +345,6 @@ export const EventForm = () => {
                   error={errors.title?.message}
                   {...register('title')}
                 />
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -285,7 +364,6 @@ export const EventForm = () => {
                       <p className="mt-1 text-sm text-error-600">{errors.type.message}</p>
                     )}
                   </div>
-
                   <Input
                     type="datetime-local"
                     label="Date and Time"
@@ -294,29 +372,73 @@ export const EventForm = () => {
                     {...register('date')}
                   />
                 </div>
-
                 <Input
                   label="Location"
                   leftIcon={<MapPin size={18} />}
                   error={errors.location?.message}
                   {...register('location')}
                 />
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Input
                     label="Theme (Optional)"
                     leftIcon={<Palette size={18} />}
                     {...register('theme')}
                   />
-
                   <Input
                     type="number"
                     label="Expected Guests"
                     leftIcon={<Users size={18} />}
+                    error={errors.expectedGuests?.message}
                     {...register('expectedGuests')}
                   />
                 </div>
-
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Event Banner Image (Optional)
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                    {bannerImagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={bannerImagePreview}
+                          alt="Banner preview"
+                          className="max-h-48 rounded-lg object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeBannerImage}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-1 text-center">
+                        <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+                        <div className="flex text-sm text-gray-600">
+                          <label
+                            htmlFor="banner-upload"
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+                          >
+                            <span>Upload a banner image</span>
+                            <input
+                              id="banner-upload"
+                              name="banner-upload"
+                              type="file"
+                              className="sr-only"
+                              accept="image/*"
+                              onChange={handleBannerImageChange}
+                            />
+                          </label>
+                          <p className="pl-1">or drag and drop</p>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, GIF up to 5MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description
@@ -327,7 +449,6 @@ export const EventForm = () => {
                     {...register('description')}
                   />
                 </div>
-
                 <div className="flex justify-end space-x-4">
                   <Button
                     type="button"
@@ -338,70 +459,17 @@ export const EventForm = () => {
                   </Button>
                   <Button
                     type="submit"
-                    rightIcon={<ChevronRight size={18} />}
+                    disabled={isUploadingImage}
+                    rightIcon={isUploadingImage ? <Loader className="animate-spin" size={18} /> : <ChevronRight size={18} />}
                   >
-                    Next Step
+                    {isUploadingImage ? 'Uploading...' : 'Next Step'}
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </form>
         );
-
       case 2:
-        return (
-          <Card>
-            <CardHeader>
-              <h2 className="text-xl font-semibold text-gray-900">Choose a Location Template</h2>
-              <p className="text-sm text-gray-500">Select a venue type for your event</p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {locationTemplates.map(template => {
-                  const Icon = template.icon;
-                  return (
-                    <div
-                      key={template.id}
-                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                        eventData.locationTemplate === template.id
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 hover:border-primary-200'
-                      }`}
-                      onClick={() => selectLocationTemplate(template.id)}
-                    >
-                      <div className="flex items-center mb-2">
-                        <div className="p-2 rounded-lg bg-primary-100">
-                          <Icon size={24} className="text-primary-600" />
-                        </div>
-                      </div>
-                      <h3 className="font-medium text-gray-900">{template.name}</h3>
-                      <p className="text-sm text-gray-500">{template.description}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex justify-between">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep(1)}
-                  leftIcon={<ChevronLeft size={18} />}
-                >
-                  Previous
-                </Button>
-                <Button
-                  onClick={() => setCurrentStep(3)}
-                  disabled={!eventData.locationTemplate}
-                  rightIcon={<ChevronRight size={18} />}
-                >
-                  Next Step
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 3:
         return (
           <Card>
             <CardHeader>
@@ -413,64 +481,79 @@ export const EventForm = () => {
                 <Input
                   placeholder="Search vendors..."
                   leftIcon={<Search size={18} />}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <div className="flex gap-2">
-                  <select className="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option value="">All Types</option>
-                    <option value="catering">Catering</option>
-                    <option value="decoration">Decoration</option>
-                    <option value="music">Music</option>
-                  </select>
-                  <select className="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option value="">All Locations</option>
-                    <option value="downtown">Downtown</option>
-                    <option value="westside">Westside</option>
-                    <option value="citywide">Citywide</option>
+                  <select
+                    className="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                  >
+                    <option value="">All Categories</option>
+                    {getUniqueCategories().map(category => (
+                      <option key={category} value={category}>
+                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {mockVendors.map(vendor => (
-                  <div
-                    key={vendor.id}
-                    className={`rounded-lg border p-4 cursor-pointer transition-all ${
-                      eventData.selectedVendors.some(v => v.id === vendor.id)
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-200 hover:border-primary-200'
-                    }`}
-                    onClick={() => toggleVendor(vendor)}
-                  >
-                    <div className="flex items-start">
-                      <img
-                        src={vendor.image}
-                        alt={vendor.name}
-                        className="w-20 h-20 rounded-lg object-cover"
-                      />
-                      <div className="ml-4 flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-medium text-gray-900">{vendor.name}</h3>
-                            <Badge variant="secondary" className="mt-1">
-                              {vendor.type}
-                            </Badge>
+              {isLoadingVendors ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader className="animate-spin h-8 w-8 text-primary-600" />
+                  <span className="ml-2">Loading vendors...</span>
+                </div>
+              ) : filteredVendors.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No vendors found. Please check your connection or try again.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {filteredVendors.map(vendor => (
+                    <div
+                      key={vendor.id}
+                      className={`rounded-lg border p-4 cursor-pointer transition-all ${
+                        eventData.selectedVendors.some(v => v.id === vendor.id)
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-primary-200'
+                      }`}
+                      onClick={() => toggleVendor(vendor)}
+                    >
+                      <div className="flex items-start">
+                        <img
+                          src={vendor.image || 'https://via.placeholder.com/80x80'}
+                          alt={vendor.name}
+                          className="w-20 h-20 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/80x80';
+                          }}
+                        />
+                        <div className="ml-4 flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-medium text-gray-900">{vendor.name}</h3>
+                              <Badge variant="secondary" className="mt-1">
+                                {vendor.category}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center">
+                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                              <span className="ml-1 text-sm font-medium">{vendor.rating}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center">
-                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                            <span className="ml-1 text-sm font-medium">{vendor.rating}</span>
-                          </div>
-                        </div>
-                        <p className="mt-1 text-sm text-gray-500">{vendor.description}</p>
-                        <div className="mt-2 flex items-center text-sm text-gray-500">
-                          <DollarSign className="w-4 h-4 mr-1" />
-                          {vendor.price}
+                          <p className="mt-1 text-sm text-gray-500">{vendor.description}</p>
+                          {(vendor.phone || vendor.contactPhone) && (
+                            <p className="mt-1 text-xs text-gray-400">
+                              {vendor.phone || vendor.contactPhone}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-
+                  ))}
+                </div>
+              )}
               {eventData.selectedVendors.length > 0 && (
                 <div className="mb-6">
                   <h3 className="font-medium text-gray-900 mb-2">Selected Vendors</h3>
@@ -478,23 +561,22 @@ export const EventForm = () => {
                     {eventData.selectedVendors.map(vendor => (
                       <div key={vendor.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                         <span>{vendor.name}</span>
-                        <Badge variant="primary">${vendor.price}</Badge>
+                        <Badge variant="primary">{vendor.category}</Badge>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-
               <div className="flex justify-between">
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentStep(2)}
+                  onClick={() => setCurrentStep(1)}
                   leftIcon={<ChevronLeft size={18} />}
                 >
                   Previous
                 </Button>
                 <Button
-                  onClick={() => setCurrentStep(4)}
+                  onClick={() => setCurrentStep(3)}
                   disabled={eventData.selectedVendors.length === 0}
                   rightIcon={<ChevronRight size={18} />}
                 >
@@ -504,8 +586,7 @@ export const EventForm = () => {
             </CardContent>
           </Card>
         );
-
-      case 4:
+      case 3:
         return (
           <Card>
             <CardHeader>
@@ -555,17 +636,16 @@ export const EventForm = () => {
                   </div>
                 </div>
               ))}
-
               <div className="flex justify-between">
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentStep(3)}
+                  onClick={() => setCurrentStep(2)}
                   leftIcon={<ChevronLeft size={18} />}
                 >
                   Previous
                 </Button>
                 <Button
-                  onClick={() => setCurrentStep(5)}
+                  onClick={() => setCurrentStep(4)}
                   rightIcon={<ChevronRight size={18} />}
                 >
                   Next Step
@@ -574,13 +654,12 @@ export const EventForm = () => {
             </CardContent>
           </Card>
         );
-
-      case 5:
+      case 4:
         return (
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-gray-900">Review & Budget Summary</h2>
-              <p className="text-sm text-gray-500">Review your event details and budget</p>
+              <h2 className="text-xl font-semibold text-gray-900">Review & Summary</h2>
+              <p className="text-sm text-gray-500">Review your event details</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -593,9 +672,15 @@ export const EventForm = () => {
                         <dd className="font-medium">{eventData.basicInfo?.title}</dd>
                       </div>
                       <div className="flex justify-between">
+                        <dt className="text-gray-500">Type</dt>
+                        <dd className="font-medium">{eventData.basicInfo?.type}</dd>
+                      </div>
+                      <div className="flex justify-between">
                         <dt className="text-gray-500">Date</dt>
                         <dd className="font-medium">
-                          {new Date(eventData.basicInfo?.date || '').toLocaleDateString()}
+                          {eventData.basicInfo?.date
+                            ? new Date(eventData.basicInfo.date).toLocaleDateString()
+                            : 'N/A'}
                         </dd>
                       </div>
                       <div className="flex justify-between">
@@ -606,10 +691,19 @@ export const EventForm = () => {
                         <dt className="text-gray-500">Expected Guests</dt>
                         <dd className="font-medium">{eventData.basicInfo?.expectedGuests}</dd>
                       </div>
+                      {eventData.basicInfo?.theme && (
+                        <div className="flex justify-between">
+                          <dt className="text-gray-500">Theme</dt>
+                          <dd className="font-medium">{eventData.basicInfo.theme}</dd>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <dt className="text-gray-500">Budget</dt>
+                        <dd className="font-medium">${eventData.budget.toLocaleString()}</dd>
+                      </div>
                     </dl>
                   </div>
                 </div>
-
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">Selected Vendors</h3>
                   <div className="space-y-2">
@@ -617,54 +711,37 @@ export const EventForm = () => {
                       <div key={vendor.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
                         <div>
                           <h4 className="font-medium">{vendor.name}</h4>
-                          <p className="text-sm text-gray-500">{vendor.type}</p>
+                          <p className="text-sm text-gray-500">{vendor.category}</p>
                         </div>
-                        <Badge variant="primary">${vendor.price}</Badge>
+                        <div className="flex items-center">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current mr-1" />
+                          <span className="text-sm">{vendor.rating}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
-
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Budget Overview</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Total Budget</span>
-                        <span className="font-medium">${eventData.budget}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Total Cost</span>
-                        <span className="font-medium">${getTotalBudget()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Remaining</span>
-                        <span className="font-medium text-success-600">
-                          ${eventData.budget - getTotalBudget()}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Budget Usage</span>
-                        <span>{Math.round(getBudgetPercentage())}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${
-                            getBudgetPercentage() > 100 ? 'bg-error-500' : 'bg-success-500'
-                          }`}
-                          style={{ width: `${Math.min(getBudgetPercentage(), 100)}%` }}
-                        />
-                      </div>
-                    </div>
+                  <h3 className="font-medium text-gray-900 mb-2">Tasks</h3>
+                  <div className="space-y-2">
+                    {Object.values(eventData.vendorTasks)
+                      .flat()
+                      .map(task => (
+                        <div key={task.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                          <span className={task.completed ? 'line-through text-gray-400' : ''}>
+                            {task.title}
+                          </span>
+                          <Badge variant={task.completed ? 'success' : 'secondary'}>
+                            {task.completed ? 'Completed' : 'Pending'}
+                          </Badge>
+                        </div>
+                      ))}
                   </div>
                 </div>
-
                 <div className="flex justify-between">
                   <Button
                     variant="outline"
-                    onClick={() => setCurrentStep(4)}
+                    onClick={() => setCurrentStep(3)}
                     leftIcon={<ChevronLeft size={18} />}
                   >
                     Previous
@@ -681,7 +758,6 @@ export const EventForm = () => {
             </CardContent>
           </Card>
         );
-
       default:
         return null;
     }
@@ -695,13 +771,12 @@ export const EventForm = () => {
           Fill in the details below to create your new event
         </p>
       </div>
-
       <div className="mb-8">
         <div className="flex items-center justify-between relative">
-          {[1, 2, 3, 4, 5].map((step) => (
+          {[1, 2, 3, 4].map((step) => (
             <div
               key={step}
-              className={`flex items-center ${step < 5 ? 'flex-1' : ''}`}
+              className={`flex items-center ${step < 4 ? 'flex-1' : ''}`}
             >
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -712,7 +787,7 @@ export const EventForm = () => {
               >
                 {step}
               </div>
-              {step < 5 && (
+              {step < 4 && (
                 <div
                   className={`flex-1 h-1 mx-2 ${
                     step < currentStep ? 'bg-primary-600' : 'bg-gray-200'
@@ -724,13 +799,11 @@ export const EventForm = () => {
         </div>
         <div className="flex justify-between mt-2 text-sm">
           <span>Basic Info</span>
-          <span>Location</span>
           <span>Vendors</span>
           <span>Tasks</span>
           <span>Review</span>
         </div>
       </div>
-
       {renderStep()}
     </div>
   );

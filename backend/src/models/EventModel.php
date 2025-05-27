@@ -1,4 +1,5 @@
 <?php
+// backend/src/models/EventModel.php
 class EventModel {
     private $pdo;
     private $table = 'events';
@@ -7,90 +8,85 @@ class EventModel {
         $this->pdo = $pdo;
     }
 
-    public function getAllEvents() {
-        try {
-            $stmt = $this->pdo->prepare("
-                SELECT e.*, 
-                       GROUP_CONCAT(DISTINCT v.name) as vendor_names,
-                       COUNT(DISTINCT t.id) as task_count
-                FROM events e 
-                LEFT JOIN event_vendors ev ON e.id = ev.event_id 
-                LEFT JOIN vendors v ON ev.vendor_id = v.id 
-                LEFT JOIN tasks t ON e.id = t.event_id 
-                GROUP BY e.id 
-                ORDER BY e.created_at DESC
-            ");
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Database error in getAllEvents: " . $e->getMessage());
-            throw $e;
-        }
-    }
-
     public function createEvent($data) {
         try {
-            $sql = "INSERT INTO {$this->table} 
-                   (user_id, title, type, theme, date, location, bannerImage, description, expectedGuests)
-                   VALUES 
-                   (:user_id, :title, :type, :theme, :date, :location, :bannerImage, :description, :expectedGuests)";
+            $this->pdo->beginTransaction();
 
+            // Validate data
+            if (!isset($data['user_id']) || !is_numeric($data['user_id'])) {
+                throw new Exception('Invalid or missing user_id');
+            }
+
+            $bannerImage = isset($data['bannerImage']) && !empty($data['bannerImage']) && filter_var($data['bannerImage'], FILTER_VALIDATE_URL)
+                ? $data['bannerImage']
+                : null;
+            $expectedGuests = isset($data['expectedGuests']) && is_numeric($data['expectedGuests'])
+                ? (int)$data['expectedGuests']
+                : 0;
+            $budget = isset($data['budget']) && is_numeric($data['budget'])
+                ? (float)$data['budget']
+                : 0;
+
+            // Insert event
+            $sql = "INSERT INTO {$this->table} (user_id, title, type, theme, date, location, bannerImage, description, expected_guests, budget, status) VALUES (:user_id, :title, :type, :theme, :date, :location, :bannerImage, :description, :expected_guests, :budget, :status)";
             $stmt = $this->pdo->prepare($sql);
-
-            // Convert expectedGuests to integer if it's a string
-            $expectedGuests = is_string($data['expectedGuests']) ? 
-                             intval($data['expectedGuests']) : 
-                             $data['expectedGuests'];
-
             $result = $stmt->execute([
-                ':user_id' => $data['user_id'],
+                ':user_id' => (int)$data['user_id'],
                 ':title' => $data['title'],
                 ':type' => $data['type'],
-                ':theme' => $data['theme'] ?? '',
+                ':theme' => $data['theme'] ?? null,
                 ':date' => $data['date'],
                 ':location' => $data['location'],
-                ':bannerImage' => $data['bannerImage'] ?? '',
-                ':description' => $data['description'] ?? '',
-                ':expectedGuests' => $expectedGuests
+                ':bannerImage' => $bannerImage,
+                ':description' => $data['description'] ?? null,
+                ':expected_guests' => $expectedGuests,
+                ':budget' => $budget,
+                ':status' => 'upcoming'
             ]);
 
-            if ($result) {
-                return $this->pdo->lastInsertId();
+            if (!$result) {
+                throw new Exception('Failed to insert event into database');
             }
-            return false;
-        } catch (PDOException $e) {
-            error_log("Database error in createEvent: " . $e->getMessage());
-            throw $e;
-        }
-    }
 
-    public function addVendorToEvent($eventId, $vendorId) {
-        try {
-            $stmt = $this->pdo->prepare("INSERT INTO event_vendors (event_id, vendor_id) VALUES (?, ?)");
-            return $stmt->execute([$eventId, $vendorId]);
-        } catch (PDOException $e) {
-            error_log("Database error in addVendorToEvent: " . $e->getMessage());
-            return false;
-        }
-    }
+            $eventId = $this->pdo->lastInsertId();
 
-    public function addTask($eventId, $title) {
-        try {
-            $stmt = $this->pdo->prepare("INSERT INTO tasks (event_id, title) VALUES (?, ?)");
-            return $stmt->execute([$eventId, $title]);
-        } catch (PDOException $e) {
-            error_log("Database error in addTask: " . $e->getMessage());
-            return false;
-        }
-    }
+            // Insert vendors
+            if (!empty($data['vendors'])) {
+                foreach ($data['vendors'] as $vendorId) {
+                    if (!is_numeric($vendorId)) {
+                        throw new Exception("Invalid vendor ID: $vendorId");
+                    }
+                    $sql = "INSERT INTO event_vendors (event_id, vendor_id) VALUES (:event_id, :vendor_id)";
+                    $stmt = $this->pdo->prepare($sql);
+                    if (!$stmt->execute([':event_id' => $eventId, ':vendor_id' => (int)$vendorId])) {
+                        throw new Exception("Failed to add vendor ID $vendorId to event");
+                    }
+                }
+            }
 
-    public function getAllVendors() {
-        try {
-            $stmt = $this->pdo->prepare("SELECT * FROM vendors ORDER BY name");
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Database error in getAllVendors: " . $e->getMessage());
+            // Insert tasks
+            if (!empty($data['tasks'])) {
+                foreach ($data['tasks'] as $task) {
+                    if (empty($task['title'])) {
+                        throw new Exception('Task title is required');
+                    }
+                    $sql = "INSERT INTO tasks (event_id, title, completed) VALUES (:event_id, :title, :completed)";
+                    $stmt = $this->pdo->prepare($sql);
+                    if (!$stmt->execute([
+                        ':event_id' => $eventId,
+                        ':title' => $task['title'],
+                        ':completed' => isset($task['completed']) && $task['completed'] ? 1 : 0
+                    ])) {
+                        throw new Exception("Failed to add task: {$task['title']}");
+                    }
+                }
+            }
+
+            $this->pdo->commit();
+            return $eventId;
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            error_log("EventModel::createEvent failed: " . $e->getMessage());
             throw $e;
         }
     }
