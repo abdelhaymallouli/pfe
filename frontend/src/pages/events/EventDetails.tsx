@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { formatDate } from '../../lib/utils';
 
 interface Event {
-  id?: number;
+  id?: string;
   title?: string;
   type?: string;
   date?: string;
