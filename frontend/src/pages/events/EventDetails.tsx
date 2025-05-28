@@ -177,9 +177,11 @@ export const EventDetails = () => {
                 <Button variant="outline" fullWidth>
                   View Budget
                 </Button>
-                <Button variant="outline" fullWidth>
-                  Task List
-                </Button>
+                <Link to={`/tasks?eventId=${id}`}>
+            <Button variant="outline" fullWidth>
+              Task List
+            </Button>
+          </Link>
               </div>
             </CardContent>
           </Card>

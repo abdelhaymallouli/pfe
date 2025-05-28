@@ -12,6 +12,10 @@ import {EventList}  from './pages/events/EventList';
 import { EventForm } from './pages/events/EventForm';
 import { EventDetails } from './pages/events/EventDetails';
 import { VendorList } from './pages/vendors/VendorList';
+import { TaskList } from './pages/tasks/TaskList';
+import { TaskForm } from './pages/tasks/TaskForm';
+
+
 
 
 
@@ -90,6 +94,25 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+
+        <Route 
+        path="/tasks" 
+        element={
+          <ProtectedRoute>
+            <TaskList />
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/tasks/new" 
+        element={
+          <ProtectedRoute>
+            <TaskForm />
+          </ProtectedRoute>
+        } 
+      />
+
       {/* Fallback route */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
