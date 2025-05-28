@@ -193,6 +193,31 @@ This project follows a phased development approach:
 
 ## About the Project
 
+
+feature/figma-designs
+
+feature/event-dashboard
+
+feature/event-templates
+
+feature/vendor-directory
+
+feature/budget-tracker
+
+feature/guest-management
+
+feature/task-list-reminders
+
+feature/api-integration
+
+feature/responsive-design
+
+feature/testing-debugging
+
+feature/ui-ux-refinement
+
+feature/documentation
+
 This project was developed as a final project.
 
 Abdelhay Mallouli
