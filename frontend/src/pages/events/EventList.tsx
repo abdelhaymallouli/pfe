@@ -15,7 +15,7 @@ interface Event {
   location: string;
   description: string;
   status: string;
-  guestCount: number;
+  expectedGuests: number; 
   bannerImage?: string;
 }
 
@@ -30,12 +30,18 @@ export const EventList = () => {
     fetch('http://localhost/pfe/backend/src/api/events.php')
       .then(async (res) => {
         const text = await res.text();
-        console.log('Raw response:', text); // <--- Check what server sent
+        console.log('Raw response:', text);  // Log the raw text
         if (!res.ok) throw new Error('Network response was not ok');
         try {
           const data = JSON.parse(text);
-          setEvents(data);
-        } catch {
+          console.log('Parsed data:', data);  // Log parsed data
+          if (data.success && Array.isArray(data.data)) {
+            setEvents(data.data);
+          } else {
+            throw new Error('Invalid response structure');
+          }
+        } catch (err) {
+          console.error('Error parsing JSON:', err);
           throw new Error('Response is not valid JSON');
         }
         setLoading(false);
@@ -144,7 +150,7 @@ export const EventList = () => {
                   </div>
                   <div className="flex items-center">
                     <Users size={16} className="mr-2" />
-                    {event.guestCount} guests
+                    {event.expectedGuests || 0} guests
                   </div>
                 </div>
                 <div className="mt-4 flex items-center text-primary-600 text-sm font-medium">

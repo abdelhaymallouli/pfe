@@ -8,8 +8,9 @@ import { Landing } from './pages/Landing';
 import  Login  from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
-import { EventList } from './pages/events/EventList'; 
+import {EventList}  from './pages/events/EventList'; 
 import { EventForm } from './pages/events/EventForm';
+import { EventDetails } from './pages/events/EventDetails';
 import { VendorList } from './pages/vendors/VendorList';
 
 
@@ -72,6 +73,14 @@ function AppRoutes() {
         } 
       />
 
+      <Route 
+        path="/events/:id" 
+        element={
+          <ProtectedRoute>
+            <EventDetails />
+          </ProtectedRoute>
+        } 
+      />
 
       <Route 
         path="/vendors" 
