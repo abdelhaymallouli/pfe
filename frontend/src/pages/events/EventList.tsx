@@ -15,7 +15,7 @@ interface Event {
   location: string;
   description: string;
   status: string;
-  guestCount: number;
+  expectedGuests: number; 
   bannerImage?: string;
 }
 
@@ -150,7 +150,7 @@ export const EventList = () => {
                   </div>
                   <div className="flex items-center">
                     <Users size={16} className="mr-2" />
-                    {event.guestCount || 0} guests
+                    {event.expectedGuests || 0} guests
                   </div>
                 </div>
                 <div className="mt-4 flex items-center text-primary-600 text-sm font-medium">

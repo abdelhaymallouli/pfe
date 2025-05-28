@@ -26,7 +26,9 @@ try {
     
     // Validate file type
     $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (!in_array($file['type'], $allowedTypes)) {
+    $fileType = mime_content_type($file['tmp_name']); // More reliable than $_FILES type
+    
+    if (!in_array($fileType, $allowedTypes)) {
         ob_clean();
         http_response_code(400);
         echo json_encode([
@@ -47,18 +49,17 @@ try {
         exit;
     }
 
-    // Define upload directory
-    $uploadDir = __DIR__ . '/../../uploads/';
+    $uploadDir = __DIR__ . '/../uploads';
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        if (!mkdir($uploadDir, 0755, true)) {
+            throw new Exception('Failed to create upload directory');
+        }
     }
 
-    // Generate unique filename
     $fileExt = pathinfo($file['name'], PATHINFO_EXTENSION);
     $fileName = uniqid('img_') . '.' . $fileExt;
     $filePath = $uploadDir . $fileName;
 
-    // Move the uploaded file
     if (!move_uploaded_file($file['tmp_name'], $filePath)) {
         ob_clean();
         http_response_code(500);
@@ -69,18 +70,21 @@ try {
         exit;
     }
 
-    // Generate URL for the uploaded file
-    $baseUrl = 'http://localhost/pfe/backend/src/Uploads/';
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'];
+    $baseUrl = $protocol . '://' . $host . '/pfe/backend/src/uploads/';
     $imageUrl = $baseUrl . $fileName;
 
     ob_clean();
     http_response_code(201);
     echo json_encode([
         'success' => true,
-        'image_url' => $imageUrl
+        'image_url' => $imageUrl,
+        'filename' => $fileName
     ]);
 
 } catch (Exception $e) {
+    error_log('Upload error: ' . $e->getMessage());
     ob_clean();
     http_response_code(500);
     echo json_encode([
@@ -90,3 +94,4 @@ try {
 }
 
 exit;
+?>

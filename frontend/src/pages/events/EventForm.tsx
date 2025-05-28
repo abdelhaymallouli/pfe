@@ -17,6 +17,7 @@ import {
   X,
   Loader,
   Image as ImageIcon,
+  DollarSign,
 } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -24,6 +25,7 @@ import { Card, CardHeader, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 
+// Update schema to include budget
 const eventSchema = z.object({
   title: z.string().min(1, 'Event name is required'),
   type: z.string().min(1, 'Event type is required'),
@@ -33,6 +35,9 @@ const eventSchema = z.object({
   description: z.string().optional().default(''),
   expectedGuests: z.string().transform(val => parseInt(val, 10)).refine(val => val >= 0, {
     message: 'Expected guests must be a positive number',
+  }),
+  budget: z.string().transform(val => parseFloat(val)).refine(val => val >= 0, {
+    message: 'Budget must be a positive number',
   }),
   bannerImage: z.instanceof(File).optional().nullable(),
 });
@@ -56,7 +61,7 @@ interface Vendor {
 
 export const EventForm = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth(); 
+  const { currentUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -72,7 +77,7 @@ export const EventForm = () => {
     basicInfo: null as EventFormValues | null,
     selectedVendors: [] as Vendor[],
     vendorTasks: {} as Record<string, { id: string; title: string; completed: boolean }[]>,
-    budget: 10000,
+    budget: 0, // Initialize as 0, will be set from form
     bannerImageUrl: '',
   });
 
@@ -86,6 +91,7 @@ export const EventForm = () => {
       theme: '',
       description: '',
       expectedGuests: 0,
+      budget: 0,
       bannerImage: null,
     },
   });
@@ -192,6 +198,7 @@ export const EventForm = () => {
       ...prev,
       basicInfo: { ...data, bannerImage: null },
       bannerImageUrl,
+      budget: data.budget, // Store budget from form
     }));
     setCurrentStep(2);
   };
@@ -392,6 +399,13 @@ export const EventForm = () => {
                     {...register('expectedGuests')}
                   />
                 </div>
+                <Input
+                  type="number"
+                  label="Budget"
+                  leftIcon={<DollarSign size={18} />}
+                  error={errors.budget?.message}
+                  {...register('budget')}
+                />
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Event Banner Image (Optional)
