@@ -66,7 +66,7 @@ try {
         error_log("Parsed POST input: " . json_encode($input));
 
         // Validate required fields
-        $required = ['user_id', 'title', 'type', 'date', 'location', 'expectedGuests'];
+        $required = ['user_id', 'title', 'type', 'date', 'location', 'expected_guests'];
         foreach ($required as $field) {
             if (!isset($input[$field])) {
                 ob_clean();
@@ -139,4 +139,3 @@ try {
     ], JSON_THROW_ON_ERROR);
 }
 exit;
-?>

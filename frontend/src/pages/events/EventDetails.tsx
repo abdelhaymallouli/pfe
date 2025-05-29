@@ -9,12 +9,12 @@ import { formatDate } from '../../lib/utils';
 interface Event {
   id?: string;
   title?: string;
-  type?: string;
+  type_name?: string; // Changed from 'type' to 'type_name'
   date?: string;
   location?: string;
   description?: string;
   status?: string;
-  expectedGuests?: number;
+  expected_guests?: number; // Changed from 'expectedGuests'
   bannerImage?: string;
 }
 
@@ -47,13 +47,7 @@ export const EventDetails = () => {
         console.log('Parsed data:', data);
 
         if (data.success && data.data) {
-          if (Array.isArray(data.data)) {
-            const foundEvent = data.data.find((e: Event) => e.id === id);
-            if (!foundEvent) throw new Error('Event not found');
-            setEvent(foundEvent);
-          } else {
-            setEvent(data.data);
-          }
+          setEvent(data.data); // Backend returns a single event object
         } else {
           throw new Error('Invalid response structure');
         }
@@ -99,7 +93,7 @@ export const EventDetails = () => {
           <p className="mt-2 text-gray-600">
             {error || "The event you're looking for doesn't exist."}
           </p>
-          <Link to="/events" className="mt-4 inline-block">
+          <Link to="/events">
             <Button variant="outline" leftIcon={<ArrowLeft size={16} />}>
               Back to Events
             </Button>
@@ -150,7 +144,7 @@ export const EventDetails = () => {
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Users className="h-5 w-5 mr-2" />
-                  <span>{event.expectedGuests ?? 0} guests</span>
+                  <span>{event.expected_guests ?? 0} guests</span>
                 </div>
               </div>
 
@@ -172,16 +166,8 @@ export const EventDetails = () => {
                   Edit Event
                 </Button>
                 <Button variant="outline" fullWidth>
-                  Manage Guests
-                </Button>
-                <Button variant="outline" fullWidth>
                   View Budget
                 </Button>
-                <Link to={`/tasks?eventId=${id}`}>
-            <Button variant="outline" fullWidth>
-              Task List
-            </Button>
-          </Link>
               </div>
             </CardContent>
           </Card>
@@ -193,7 +179,7 @@ export const EventDetails = () => {
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Event Type</h3>
                   <p className="mt-1 text-gray-900">
-                    {event.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'Unknown'}
+                    {event.type_name ? event.type_name.charAt(0).toUpperCase() + event.type_name.slice(1) : 'Unknown'}
                   </p>
                 </div>
                 <div>
@@ -206,7 +192,7 @@ export const EventDetails = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Guest Count</h3>
-                  <p className="mt-1 text-gray-900">{event.expectedGuests ?? 0} people</p>
+                  <p className="mt-1 text-gray-900">{event.expected_guests ?? 0} people</p>
                 </div>
               </div>
             </CardContent>

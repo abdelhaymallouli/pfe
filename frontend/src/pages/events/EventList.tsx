@@ -10,12 +10,12 @@ import { formatDate } from '../../lib/utils';
 interface Event {
   id: string;
   title: string;
-  type: string;
+  type_name: string; 
   date: string;
   location: string;
   description: string;
   status: string;
-  expectedGuests: number; 
+  expected_guests: number; 
   bannerImage?: string;
 }
 
@@ -30,11 +30,11 @@ export const EventList = () => {
     fetch('http://localhost/pfe/backend/src/api/events.php')
       .then(async (res) => {
         const text = await res.text();
-        console.log('Raw response:', text);  // Log the raw text
+        console.log('Raw response:', text);
         if (!res.ok) throw new Error('Network response was not ok');
         try {
           const data = JSON.parse(text);
-          console.log('Parsed data:', data);  // Log parsed data
+          console.log('Parsed data:', data);
           if (data.success && Array.isArray(data.data)) {
             setEvents(data.data);
           } else {
@@ -51,21 +51,20 @@ export const EventList = () => {
         setLoading(false);
       });
   }, []);
-  
 
   const filteredEvents = events.filter(event => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || event.type === filterType;
+    const matchesFilter = filterType === 'all' || event.type_name === filterType;
     return matchesSearch && matchesFilter;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'planning':
+      case 'upcoming':
         return 'primary';
-      case 'confirmed':
+      case 'completed':
         return 'success';
       case 'cancelled':
         return 'error';
@@ -124,7 +123,7 @@ export const EventList = () => {
             <Card isPressable isHoverable className="h-full">
               <div className="h-48 relative">
                 <img
-                  src={event.bannerImage}
+                  src={event.bannerImage || 'https://via.placeholder.com/400x200'}
                   alt={event.title}
                   className="w-full h-full object-cover rounded-t-xl"
                 />
@@ -150,7 +149,7 @@ export const EventList = () => {
                   </div>
                   <div className="flex items-center">
                     <Users size={16} className="mr-2" />
-                    {event.expectedGuests || 0} guests
+                    {event.expected_guests || 0} guests
                   </div>
                 </div>
                 <div className="mt-4 flex items-center text-primary-600 text-sm font-medium">
