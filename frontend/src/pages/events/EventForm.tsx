@@ -70,6 +70,7 @@ interface Requete {
   description: string | null;
   date_limite: string | null;
   statut: 'Open' | 'In Progress' | 'Completed' | 'Cancelled';
+  montant: number;
 }
 
 export const EventForm = () => {
@@ -240,6 +241,7 @@ export const EventForm = () => {
             description: null,
             date_limite: null,
             statut: 'Open',
+            montant: parseFloat(vendor.price.replace('$', '')) || 0,
           },
         ];
       } else {
@@ -253,7 +255,7 @@ export const EventForm = () => {
     });
   };
 
-  const addRequete = (vendorId: string, titre: string) => {
+  const addRequete = (vendorId: string, titre: string, montant: number) => {
     setEventData(prev => ({
       ...prev,
       requetes: {
@@ -266,8 +268,21 @@ export const EventForm = () => {
             description: null,
             date_limite: null,
             statut: 'Open',
+            montant,
           },
         ],
+      },
+    }));
+  };
+
+  const updateRequeteMontant = (vendorId: string, requeteId: string, montant: number) => {
+    setEventData(prev => ({
+      ...prev,
+      requetes: {
+        ...prev.requetes,
+        [vendorId]: prev.requetes[vendorId].map(r =>
+          r.id === requeteId ? { ...r, montant } : r
+        ),
       },
     }));
   };
@@ -320,7 +335,13 @@ export const EventForm = () => {
         description: eventData.basicInfo.description || '',
         expected_guests: eventData.basicInfo.expected_guests,
         budget: eventData.budget,
-        requetes: Object.values(eventData.requetes).flat(),
+        requetes: Object.values(eventData.requetes).flat().map(r => ({
+          titre: r.titre,
+          description: r.description,
+          date_limite: r.date_limite,
+          statut: r.statut,
+          montant: r.montant,
+        })),
       };
 
       console.log('Sending payload:', payload);
@@ -623,11 +644,11 @@ export const EventForm = () => {
                   <div className="space-y-2">
                     {eventData.requetes[vendor.id]?.map(requete => (
                       <div key={requete.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                        <div className="flex items-center">
+                        <div className="flex items-center space-x-2">
                           <select
                             value={requete.statut}
                             onChange={() => toggleRequeteStatus(vendor.id, requete.id)}
-                            className="mr-2 rounded-md border-gray-300 text-sm"
+                            className="rounded-md border-gray-300 text-sm"
                           >
                             <option value="Open">Open</option>
                             <option value="In Progress">In Progress</option>
@@ -635,6 +656,13 @@ export const EventForm = () => {
                             <option value="Cancelled">Cancelled</option>
                           </select>
                           <span>{requete.titre}</span>
+                          <Input
+                            type="number"
+                            placeholder="Amount"
+                            value={requete.montant}
+                            onChange={(e) => updateRequeteMontant(vendor.id, requete.id, parseFloat(e.target.value) || 0)}
+                            className="w-24"
+                          />
                         </div>
                         <button
                           onClick={() => removeRequete(vendor.id, requete.id)}
@@ -644,19 +672,31 @@ export const EventForm = () => {
                         </button>
                       </div>
                     ))}
-                    <div className="mt-2">
+                    <div className="mt-2 flex space-x-2">
                       <Input
                         placeholder="Add new requete..."
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            const input = e.target as HTMLInputElement;
-                            if (input.value.trim()) {
-                              addRequete(vendor.id, input.value.trim());
-                              input.value = '';
-                            }
+                        id={`new-requete-${vendor.id}`}
+                        className="flex-1"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Amount"
+                        id={`new-requete-amount-${vendor.id}`}
+                        className="w-24"
+                      />
+                      <Button
+                        onClick={() => {
+                          const input = document.getElementById(`new-requete-${vendor.id}`) as HTMLInputElement;
+                          const amountInput = document.getElementById(`new-requete-amount-${vendor.id}`) as HTMLInputElement;
+                          if (input.value.trim() && amountInput.value.trim()) {
+                            addRequete(vendor.id, input.value.trim(), parseFloat(amountInput.value) || 0);
+                            input.value = '';
+                            amountInput.value = '';
                           }
                         }}
-                      />
+                      >
+                        Add
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -753,7 +793,10 @@ export const EventForm = () => {
                       .flat()
                       .map(requete => (
                         <div key={requete.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                          <span>{requete.titre}</span>
+                          <div>
+                            <span>{requete.titre}</span>
+                            <p className="text-sm text-gray-500">Amount: ${requete.montant.toLocaleString()}</p>
+                          </div>
                           <Badge variant={requete.statut === 'Completed' ? 'success' : 'secondary'}>
                             {requete.statut}
                           </Badge>

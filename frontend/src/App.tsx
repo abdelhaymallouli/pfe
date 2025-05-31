@@ -7,12 +7,14 @@ import { Footer } from './components/navigation/Footer';
 import { Landing } from './pages/Landing';
 import  Login  from './pages/Login';
 import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
+import {Dashboard} from './pages/Dashboard';
 import {EventList}  from './pages/events/EventList'; 
 import  {EventForm}  from './pages/events/EventForm';
 import { EventDetails } from './pages/events/EventDetails';
 import { VendorList } from './pages/vendors/VendorList';
 import { VendorDetails } from './pages/vendors/VendorDetails';
+import { TransactionTracker } from './pages/transactions/TransactionTracker';
+import { AddTransactionForm } from './pages/transactions/AddTransactionForm';
 
 
 
@@ -98,6 +100,24 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <VendorDetails />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/transactions" 
+        element={
+          <ProtectedRoute>
+            <TransactionTracker />
+          </ProtectedRoute>
+        } 
+      />
+
+            <Route 
+        path="/transactions/new" 
+        element={
+          <ProtectedRoute>
+            <AddTransactionForm />
           </ProtectedRoute>
         } 
       />

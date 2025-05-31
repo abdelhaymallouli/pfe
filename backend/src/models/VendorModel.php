@@ -38,8 +38,7 @@ class VendorModel {
                 v.email AS contactEmail,
                 v.image,
                 v.note AS rating,
-                GROUP_CONCAT(t.name) AS category,
-                GROUP_CONCAT(CONCAT(t.name, ':', vt.price)) AS prices
+                GROUP_CONCAT(CONCAT(t.id_type, ':', vt.price)) AS prices
             FROM vendor v
             LEFT JOIN vendor_type vt ON v.id_vendor = vt.id_vendor
             LEFT JOIN type t ON vt.id_type = t.id_type

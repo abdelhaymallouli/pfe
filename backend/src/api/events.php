@@ -21,9 +21,11 @@ try {
             ob_clean();
             if ($event) {
                 http_response_code(200);
+                $event['budget'] = (float)$event['budget'];
+                $event['id_type'] = (int)$event['id_type']; // Ensure id_type is cast to int
                 echo json_encode([
                     'success' => true,
-                    'data' => $event
+                    'data' => [$event]
                 ], JSON_THROW_ON_ERROR);
             } else {
                 http_response_code(404);
@@ -39,7 +41,11 @@ try {
         http_response_code(200);
         echo json_encode([
             'success' => true,
-            'data' => $events
+            'data' => array_map(function($event) {
+                $event['budget'] = (float)$event['budget'];
+                $event['id_type'] = (int)$event['id_type']; // Ensure id_type is cast to int
+                return $event;
+            }, $events)
         ], JSON_THROW_ON_ERROR);
         exit;
     }
