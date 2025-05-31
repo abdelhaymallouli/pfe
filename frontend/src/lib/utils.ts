@@ -45,6 +45,8 @@ export function getAvatarUrl(name: string): string {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
 }
 
+
+
 // Build initials from name
 export function getInitials(name: string): string {
   return name

@@ -15,7 +15,7 @@ interface Event {
   location: string;
   description: string;
   status: string;
-  expectedGuests: number; 
+  expectedGuests: number;
   bannerImage?: string;
 }
 
@@ -30,11 +30,11 @@ export const EventList = () => {
     fetch('http://localhost/pfe/backend/src/api/events.php')
       .then(async (res) => {
         const text = await res.text();
-        console.log('Raw response:', text);  // Log the raw text
+        console.log('Raw response:', text);
         if (!res.ok) throw new Error('Network response was not ok');
         try {
           const data = JSON.parse(text);
-          console.log('Parsed data:', data);  // Log parsed data
+          console.log('Parsed data:', data);
           if (data.success && Array.isArray(data.data)) {
             setEvents(data.data);
           } else {
@@ -51,21 +51,22 @@ export const EventList = () => {
         setLoading(false);
       });
   }, []);
-  
 
   const filteredEvents = events.filter(event => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || event.type === filterType;
+    const matchesFilter = filterType === 'all' || event.type.toLowerCase() === filterType.toLowerCase();
     return matchesSearch && matchesFilter;
   });
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'planning':
+    switch (status.toLowerCase()) {
+      case 'planned':
         return 'primary';
-      case 'confirmed':
+      case 'ongoing':
+        return 'success';
+      case 'completed':
         return 'success';
       case 'cancelled':
         return 'error';
@@ -110,10 +111,10 @@ export const EventList = () => {
             onChange={(e) => setFilterType(e.target.value)}
           >
             <option value="all">All Types</option>
-            <option value="wedding">Wedding</option>
-            <option value="corporate">Corporate</option>
-            <option value="birthday">Birthday</option>
-            <option value="social">Social</option>
+            <option value="Wedding">Wedding</option>
+            <option value="Birthday">Birthday</option>
+            <option value="Corporate">Corporate</option>
+            <option value="Concert">Concert</option>
           </select>
         </div>
       </div>
@@ -124,15 +125,15 @@ export const EventList = () => {
             <Card isPressable isHoverable className="h-full">
               <div className="h-48 relative">
                 <img
-                  src={event.bannerImage}
+                  src={event.bannerImage || '/default-image.jpg'} // Fallback for missing image
                   alt={event.title}
-                  className="w-full h-full object-cover rounded-t-xl"
+                  className="wフル h-full object-cover rounded-t-xl"
                 />
                 <Badge
                   variant={getStatusColor(event.status)}
                   className="absolute top-4 right-4"
                 >
-                  {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                  {event.status}
                 </Badge>
               </div>
               <CardContent className="p-4">

@@ -2,7 +2,7 @@
 // backend/src/models/EventModel.php
 class EventModel {
     private $pdo;
-    private $table = 'events';
+    private $table = 'event';
 
     public function __construct($pdo) {
         $this->pdo = $pdo;
@@ -10,7 +10,11 @@ class EventModel {
 
     public function getAllEvents() {
         try {
-            $sql = "SELECT id, user_id, title, type, theme, date, location, bannerImage, description, expected_guests AS expectedGuests, budget, status FROM {$this->table}";
+            $sql = "SELECT e.id_event AS id, e.id_client AS user_id, e.title, t.name AS type, e.date, e.lieu AS location, 
+                           e.image_banniere AS bannerImage, e.description, e.expected_guests AS expectedGuests, 
+                           e.budget, e.statut AS status 
+                    FROM {$this->table} e 
+                    JOIN type t ON e.id_type = t.id_type";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute();
             $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -23,7 +27,12 @@ class EventModel {
 
     public function getEventById(int $id) {
         try {
-            $sql = "SELECT id, user_id, title, type, theme, date, location, bannerImage, description, expected_guests AS expectedGuests, budget, status FROM events WHERE id = ?";
+            $sql = "SELECT e.id_event AS id, e.id_client AS user_id, e.title, t.name AS type, e.date, e.lieu AS location, 
+                           e.image_banniere AS bannerImage, e.description, e.expected_guests AS expectedGuests, 
+                           e.budget, e.statut AS status 
+                    FROM {$this->table} e 
+                    JOIN type t ON e.id_type = t.id_type 
+                    WHERE e.id_event = ?";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$id]);
             $event = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -38,46 +47,38 @@ class EventModel {
         try {
             $this->pdo->beginTransaction();
 
-            // Validate data
-            if (!isset($data['user_id']) || !is_numeric($data['user_id'])) {
-                throw new Exception('Invalid or missing user_id');
+            // Validate required fields
+            $required = ['user_id', 'title', 'type_id', 'date', 'location', 'expected_guests'];
+            foreach ($required as $field) {
+                if (!isset($data[$field]) || (is_string($data[$field]) && empty(trim($data[$field])))) {
+                    throw new Exception("Missing or empty required field: $field");
+                }
             }
 
-            // Handle banner image - check both possible field names
-            $bannerImage = null;
-            if (isset($data['bannerImage']) && !empty($data['bannerImage'])) {
-                $bannerImage = $data['bannerImage'];
-            } elseif (isset($data['banner_image']) && !empty($data['banner_image'])) {
-                $bannerImage = $data['banner_image'];
-            }
+            // Handle banner image
+            $bannerImage = isset($data['image_banniere']) && !empty($data['image_banniere'])
+                ? $data['image_banniere']
+                : null;
 
-            // Handle expected guests - check both possible field names
-            $expectedGuests = 0;
-            if (isset($data['expectedGuests']) && is_numeric($data['expectedGuests'])) {
-                $expectedGuests = (int)$data['expectedGuests'];
-            } elseif (isset($data['expected_guests']) && is_numeric($data['expected_guests'])) {
-                $expectedGuests = (int)$data['expected_guests'];
-            }
-
-            $budget = isset($data['budget']) && is_numeric($data['budget'])
-                ? (float)$data['budget']
-                : 0;
+            // Handle numeric fields
+            $expectedGuests = (int)($data['expected_guests'] ?? 0);
+            $budget = (float)($data['budget'] ?? 0);
 
             // Insert event
-            $sql = "INSERT INTO {$this->table} (user_id, title, type, theme, date, location, bannerImage, description, expected_guests, budget, status) VALUES (:user_id, :title, :type, :theme, :date, :location, :bannerImage, :description, :expected_guests, :budget, :status)";
+            $sql = "INSERT INTO {$this->table} (id_client, title, id_type, date, lieu, image_banniere, description, expected_guests, budget, statut) 
+                    VALUES (:id_client, :title, :id_type, :date, :lieu, :image_banniere, :description, :expected_guests, :budget, :statut)";
             $stmt = $this->pdo->prepare($sql);
             $result = $stmt->execute([
-                ':user_id' => (int)$data['user_id'],
+                ':id_client' => (int)$data['user_id'],
                 ':title' => $data['title'],
-                ':type' => $data['type'],
-                ':theme' => $data['theme'] ?? '',
+                ':id_type' => (int)$data['type_id'],
                 ':date' => $data['date'],
-                ':location' => $data['location'],
-                ':bannerImage' => $bannerImage,
+                ':lieu' => $data['location'],
+                ':image_banniere' => $bannerImage,
                 ':description' => $data['description'] ?? '',
                 ':expected_guests' => $expectedGuests,
                 ':budget' => $budget,
-                ':status' => 'upcoming'
+                ':statut' => $data['status'] ?? 'Planned'
             ]);
 
             if (!$result) {
@@ -86,37 +87,19 @@ class EventModel {
 
             $eventId = $this->pdo->lastInsertId();
 
-            // Insert vendors
-            if (!empty($data['vendors']) && is_array($data['vendors'])) {
-                foreach ($data['vendors'] as $vendorId) {
-                    if (!is_numeric($vendorId)) {
-                        error_log("Skipping invalid vendor ID: $vendorId");
-                        continue;
-                    }
-                    $sql = "INSERT INTO event_vendors (event_id, vendor_id) VALUES (:event_id, :vendor_id)";
+            // Insert requetes
+            if (isset($data['requetes']) && is_array($data['requetes'])) {
+                foreach ($data['requetes'] as $requete) {
+                    $sql = "INSERT INTO requete (titre, description, date_limite, statut, id_event) 
+                            VALUES (:titre, :description, :date_limite, :statut, :id_event)";
                     $stmt = $this->pdo->prepare($sql);
-                    if (!$stmt->execute([':event_id' => $eventId, ':vendor_id' => (int)$vendorId])) {
-                        error_log("Failed to add vendor ID $vendorId to event");
-                    }
-                }
-            }
-
-            // Insert tasks
-            if (!empty($data['tasks']) && is_array($data['tasks'])) {
-                foreach ($data['tasks'] as $task) {
-                    if (empty($task['title'])) {
-                        error_log('Skipping task with empty title');
-                        continue;
-                    }
-                    $sql = "INSERT INTO tasks (event_id, title, is_done) VALUES (:event_id, :title, :is_done)";
-                    $stmt = $this->pdo->prepare($sql);
-                    if (!$stmt->execute([
-                        ':event_id' => $eventId,
-                        ':title' => $task['title'],
-                        ':is_done' => isset($task['completed']) && $task['completed'] ? 1 : 0
-                    ])) {
-                        error_log("Failed to add task: {$task['title']}");
-                    }
+                    $stmt->execute([
+                        ':titre' => $requete['titre'],
+                        ':description' => $requete['description'] ?? null,
+                        ':date_limite' => $requete['date_limite'] ?? null,
+                        ':statut' => $requete['statut'] ?? 'Open',
+                        ':id_event' => $eventId
+                    ]);
                 }
             }
 
@@ -126,32 +109,6 @@ class EventModel {
             $this->pdo->rollBack();
             error_log("EventModel::createEvent failed: " . $e->getMessage());
             error_log("Data received: " . json_encode($data));
-            throw $e;
-        }
-    }
-
-    public function addVendorToEvent($eventId, $vendorId) {
-        try {
-            $sql = "INSERT INTO event_vendors (event_id, vendor_id) VALUES (:event_id, :vendor_id)";
-            $stmt = $this->pdo->prepare($sql);
-            return $stmt->execute([':event_id' => $eventId, ':vendor_id' => $vendorId]);
-        } catch (Exception $e) {
-            error_log("EventModel::addVendorToEvent failed: " . $e->getMessage());
-            throw $e;
-        }
-    }
-
-    public function addTask($eventId, $title) {
-        try {
-            $sql = "INSERT INTO tasks (event_id, title, is_done) VALUES (:event_id, :title, :is_done)";
-            $stmt = $this->pdo->prepare($sql);
-            return $stmt->execute([
-                ':event_id' => $eventId,
-                ':title' => $title,
-                ':is_done' => 0
-            ]);
-        } catch (Exception $e) {
-            error_log("EventModel::addTask failed: " . $e->getMessage());
             throw $e;
         }
     }

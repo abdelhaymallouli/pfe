@@ -1,6 +1,5 @@
 <?php
-// models/VendorModel.php
-
+// backend/src/models/VendorModel.php
 class VendorModel {
     private $pdo;
 
@@ -8,11 +7,68 @@ class VendorModel {
         $this->pdo = $pdo;
     }
 
-    // Fetch all vendors
     public function getAllVendors() {
-        $stmt = $this->pdo->prepare("SELECT * FROM vendors");
+        $stmt = $this->pdo->prepare("
+            SELECT 
+                v.id_vendor AS id,
+                v.nom AS name,
+                v.description,
+                v.phone AS contactPhone,
+                v.email AS contactEmail,
+                v.image,
+                v.note AS rating,
+                GROUP_CONCAT(t.name) AS category,
+                MIN(vt.price) AS price
+            FROM vendor v
+            LEFT JOIN vendor_type vt ON v.id_vendor = vt.id_vendor
+            LEFT JOIN type t ON vt.id_type = t.id_type
+            GROUP BY v.id_vendor
+        ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getVendorById($id) {
+        $stmt = $this->pdo->prepare("
+            SELECT 
+                v.id_vendor AS id,
+                v.nom AS name,
+                v.description,
+                v.phone AS contactPhone,
+                v.email AS contactEmail,
+                v.image,
+                v.note AS rating,
+                GROUP_CONCAT(t.name) AS category,
+                GROUP_CONCAT(CONCAT(t.name, ':', vt.price)) AS prices
+            FROM vendor v
+            LEFT JOIN vendor_type vt ON v.id_vendor = vt.id_vendor
+            LEFT JOIN type t ON vt.id_type = t.id_type
+            WHERE v.id_vendor = ?
+            GROUP BY v.id_vendor
+        ");
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getVendorsByType($type_id) {
+        $stmt = $this->pdo->prepare("
+            SELECT 
+                v.id_vendor AS id,
+                v.nom AS name,
+                v.description,
+                v.phone AS contactPhone,
+                v.email AS contactEmail,
+                v.image,
+                v.note AS rating,
+                t.name AS category,
+                vt.price AS price
+            FROM vendor v
+            JOIN vendor_type vt ON v.id_vendor = vt.id_vendor
+            JOIN type t ON vt.id_type = t.id_type
+            WHERE vt.id_type = ?
+        ");
+        $stmt->execute([$type_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
+?>

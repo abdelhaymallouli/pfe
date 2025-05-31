@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Add this import
 import { Search, Star, Phone, Mail, Globe } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Card, CardContent } from '../../components/ui/Card';
@@ -13,7 +15,6 @@ interface Vendor {
   price: string;
   contactEmail: string;
   contactPhone: string;
-  website: string;
   image: string;
 }
 
@@ -22,18 +23,37 @@ export const VendorList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [minRating, setMinRating] = useState(0);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    fetch('http://localhost/pfe/backend/src/api/vendor.php')
-      .then(response => response.json())
-      .then(data => setVendors(data))
-      .catch(error => console.error('Error fetching vendors:', error));
-  }, []);
+
+useEffect(() => {
+  fetch('http://localhost/pfe/backend/src/api/vendor.php')
+    .then(response => {
+      if (!response.ok) {
+        return response.text().then(text => {
+          console.error('Response status:', response.status);
+          console.error('Raw response 1:', text); // Log raw response
+          throw new Error(`HTTP error! status: ${response.status}`);
+        });
+      }
+      return response.text().then(text => {
+        console.log('Raw response:', text); // Log raw response before parsing
+        return JSON.parse(text); // Parse manually to catch errors
+      });
+    })
+    .then(data => setVendors(data.map((vendor: any) => ({
+      ...vendor,
+      price: `$${Number(vendor.price).toFixed(2)}`,
+      rating: parseFloat(vendor.rating || 0), 
+    }))))
+    .catch(error => console.error('Error fetching vendors:', error));
+}, []);
 
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          vendor.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || vendor.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || 
+                           vendor.category.toLowerCase().includes(selectedCategory.toLowerCase());
     const matchesRating = vendor.rating >= minRating;
     return matchesSearch && matchesCategory && matchesRating;
   });
@@ -62,11 +82,10 @@ export const VendorList = () => {
           onChange={(e) => setSelectedCategory(e.target.value)}
         >
           <option value="all">All Categories</option>
-          <option value="venue">Venues</option>
-          <option value="catering">Catering</option>
-          <option value="florist">Florists</option>
-          <option value="photography">Photography</option>
-          <option value="entertainment">Entertainment</option>
+          <option value="wedding">Wedding</option>
+          <option value="birthday">Birthday</option>
+          <option value="corporate">Corporate</option>
+          <option value="concert">Concert</option>
         </select>
 
         <select
@@ -82,7 +101,11 @@ export const VendorList = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredVendors.map((vendor) => (
-          <Card key={vendor.id} className="overflow-hidden">
+          <Card 
+            key={vendor.id} 
+            className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow" 
+            onClick={() => navigate(`/vendors/${vendor.id}`)} // Navigate to details page
+          >
             <div className="h-48 relative">
               <img
                 src={vendor.image}
@@ -105,7 +128,7 @@ export const VendorList = () => {
                 </div>
               </div>
               <Badge variant="secondary" className="mb-3">
-                {vendor.category.charAt(0).toUpperCase() + vendor.category.slice(1)}
+                {vendor.category.split(',').join(', ')}
               </Badge>
               <p className="text-gray-600 text-sm mb-4">{vendor.description}</p>
               <div className="space-y-2 text-sm">
@@ -119,17 +142,6 @@ export const VendorList = () => {
                   <Phone className="w-4 h-4 mr-2" />
                   <a href={`tel:${vendor.contactPhone}`} className="hover:text-primary-600">
                     {vendor.contactPhone}
-                  </a>
-                </div>
-                <div className="flex items-center text-gray-500">
-                  <Globe className="w-4 h-4 mr-2" />
-                  <a
-                    href={`https://${vendor.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-primary-600"
-                  >
-                    {vendor.website}
                   </a>
                 </div>
               </div>

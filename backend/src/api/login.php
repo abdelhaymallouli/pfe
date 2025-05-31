@@ -1,15 +1,13 @@
 <?php
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../models/user.php';
-require_once __DIR__ . '/../../config/cors.php'; // If needed
+require_once __DIR__ . '/../../config/cors.php'; 
 require_once __DIR__ . '/../../config/auth_config.php';
 
 
-// Connect to database
 $database = new Database();
 $db = $database->getConnection();
 
-// Get POST data (JSON input)
 $data = json_decode(file_get_contents("php://input"));
 
 if (empty($data->email) || empty($data->password)) {

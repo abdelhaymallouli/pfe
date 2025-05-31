@@ -1,323 +1,137 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
---
--- Host: 127.0.0.1
--- Generation Time: May 28, 2025 at 10:28 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Create Database
+CREATE DATABASE IF NOT EXISTS venuvibe CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE venuvibe;
 
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
+-- Table: CLIENT
+CREATE TABLE client (
+  id_client INT AUTO_INCREMENT PRIMARY KEY,
+  nom VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  mot_de_passe VARCHAR(255) NOT NULL,
+  date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Table: TYPE
+CREATE TABLE type (
+  id_type INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL
+) ENGINE=InnoDB;
+
+-- Table: EVENT
+CREATE TABLE event (
+  id_event INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(100) NOT NULL,
+  date DATE NOT NULL,
+  lieu VARCHAR(100),
+  image_banniere VARCHAR(255),
+  description TEXT,
+  statut ENUM('Planned', 'Ongoing', 'Completed', 'Cancelled') DEFAULT 'Planned',
+  expected_guests INT,
+  budget DECIMAL(10,2),
+  date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+  id_client INT NOT NULL,
+  id_type INT NOT NULL,
+  FOREIGN KEY (id_client) REFERENCES client(id_client) ON DELETE CASCADE,
+  FOREIGN KEY (id_type) REFERENCES type(id_type) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- Table: VENDOR
+CREATE TABLE vendor (
+  id_vendor INT AUTO_INCREMENT PRIMARY KEY,
+  nom VARCHAR(100) NOT NULL,
+  description TEXT,
+  phone VARCHAR(20),
+  email VARCHAR(100) NOT NULL,
+  image VARCHAR(255),
+  note DECIMAL(3,2),
+  date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Table: VENDOR_TYPE (Junction table for vendor & type with price)
+CREATE TABLE vendor_type (
+  id_vendor INT NOT NULL,
+  id_type INT NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (id_vendor, id_type),
+  FOREIGN KEY (id_vendor) REFERENCES vendor(id_vendor) ON DELETE CASCADE,
+  FOREIGN KEY (id_type) REFERENCES type(id_type) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Table: EVENEMENT_COLLABORATEUR
+CREATE TABLE evenement_collaborateur (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_event INT NOT NULL,
+  role VARCHAR(50),
+  FOREIGN KEY (id_event) REFERENCES event(id_event) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Table: REQUETE
+CREATE TABLE requete (
+  id_requete INT AUTO_INCREMENT PRIMARY KEY,
+  titre VARCHAR(100) NOT NULL,
+  description TEXT,
+  date_limite DATE,
+  statut ENUM('Open', 'In Progress', 'Completed', 'Cancelled') DEFAULT 'Open',
+  id_event INT NOT NULL,
+  FOREIGN KEY (id_event) REFERENCES event(id_event) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Table: TRANSACTION
+CREATE TABLE transaction (
+  id_transaction INT AUTO_INCREMENT PRIMARY KEY,
+  montant DECIMAL(10,2) NOT NULL,
+  date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  id_event INT NOT NULL,
+  FOREIGN KEY (id_event) REFERENCES event(id_event) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Optional: Sample data for TYPE (for testing)
+INSERT INTO type (name) VALUES ('Wedding'), ('Birthday'), ('Corporate'), ('Concert');
 
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
 
---
--- Database: `venuvibe`
---
+-- Insert 20 vendors into the vendor table
+INSERT INTO vendor (nom, description, phone, email, image, note) VALUES
+('Elite Catering', 'Premium catering services for all events', '555-0101', 'contact@elitecatering.com', 'https://cdn.pixabay.com/photo/2016/03/27/18/53/drinks-1283608_1280.jpg', 4.8),
+('Starlight Decor', 'Elegant decor solutions for memorable events', '555-0102', 'info@starlightdecor.com', 'https://cdn.pixabay.com/photo/2021/11/22/18/29/laser-show-6817130_1280.jpg', 4.6),
+('Harmony Music', 'Live music and DJ services', '555-0103', 'bookings@harmonymusic.com', 'https://cdn.pixabay.com/photo/2020/11/27/07/32/choir-5781096_1280.jpg', 4.7),
+('Bliss Photography', 'Professional event photography', '555-0104', 'hello@blissphoto.com', 'https://www.weddedblissphotography.com/wp-content/uploads/2014/04/27-12610-pp_gallery/Vernon-Wedding-Photographer-Wedded-Bliss-Photography-www.weddedblissphotography.com-0160(pp_w799_h533).jpg', 4.9),
+('Golden Venue', 'Luxury venue rentals', '555-0105', 'reservations@goldenvenue.com', 'https://cdn0.weddingwire.com/vendor/118851/3_2/960/jpg/a-4_51_2158811-169774370863218.webp', 4.5),
+('Tasty Treats', 'Custom cakes and desserts', '555-0106', 'orders@tastytreats.com', 'https://www.somewhatsimple.com/wp-content/uploads/2018/05/cake_mix_cookies_10.jpg', 4.7),
+('Bright Lights', 'Event lighting specialists', '555-0107', 'info@brightlights.com', 'https://upload.wikimedia.org/wikipedia/en/6/6b/CeeLo-BrightLightsBiggerCity.jpg', 4.6),
+('Pure Elegance', 'Floral arrangements and designs', '555-0108', 'contact@pureelegance.com', 'https://res.cloudinary.com/ufn/image/upload/c_pad,f_auto,q_auto,fl_progressive,dpr_1.5,w_241,h_270/1622836145948_6.jpg', 4.8),
+('Vibe Entertainment', 'Interactive entertainment services', '555-0109', 'events@vibeent.com', 'https://cdn0.weddingwire.com/vendor/173800/3_2/960/jpg/1528347552-3b05eb7edc12bad2-1528347551-1383ba5375745fcd-1528347551397-1-Vibe_Entertainment.jpeg', 4.5),
+('Crystal Events', 'Full-service event planning', '555-0110', 'plan@crystalevents.com', 'https://crystalfes.com/media/pages/galerie/6f2c89c5a3-1702416790/salle-fetes-fes-600x450-crop.jpg', 4.9),
+('Gourmet Bites', 'Gourmet food catering', '555-0111', 'info@gourmetbites.com', 'https://static.wixstatic.com/media/d425e0_f3d99e7b721445739657d9a26abd6b4b~mv2.jpg/v1/fill/w_742,h_496,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d425e0_f3d99e7b721445739657d9a26abd6b4b~mv2.jpg', 4.7),
+('Skyline Rentals', 'Furniture and equipment rentals', '555-0112', 'rentals@skylinerentals.com', 'https://images.squarespace-cdn.com/content/v1/5f85d73f24a4090c6e56e9fd/2a1daf2f-d05b-48da-aeb0-6435d05035f6/IMG_1312.jpg', 4.6),
+('Moments Captured', 'Videography and drone services', '555-0113', 'book@momentscaptured.com', 'https://2bridges.b-cdn.net/wp-content/uploads/2019/08/candidphotography-1.jpg', 4.8),
+('Festive Planners', 'Creative event coordination', '555-0114', 'contact@festiveplanners.com', 'https://shop.christmasphere.com/cdn/shop/products/il_fullxfull.3488991509_a5l2.jpg?v=1668626789&width=1946', 4.7),
+('Luxe Transport', 'Luxury transportation services', '555-0115', 'book@luxetransport.com', 'https://www.infinity-luxe-chauffeur.com/wp-content/uploads/2024/02/autocar-location-infinity-luxe-1024x576.png', 4.6),
+('Chic Designs', 'Custom event styling', '555-0116', 'design@chicdesigns.com', 'https://www.reveriesocial.com/wp-content/uploads/2024/01/Bold-Color-Maximalist.webp', 4.8),
+('Melody Bands', 'Live bands for all occasions', '555-0117', 'info@melodybands.com', 'https://cdn.alivenetwork.com/images/extrabandpics/av5.jpg', 4.7),
+('Sparkle Events', 'Event decor and props', '555-0118', 'events@sparkleevents.com', 'https://projectparty.com.au/wp-content/uploads/2021/09/sparkling-events-party-hire-1st-1024x767.jpeg', 4.6),
+('Tasteful Menus', 'Customized catering services', '555-0119', 'orders@tastefulmenus.com', 'https://blog.lisi.menu/wp-content/uploads/2023/05/17.-Menu-17-1-1024x683.jpg', 4.8),
+('Dream Stages', 'Stage and sound system rentals', '555-0120', 'rentals@dreamstages.com', 'https://theoneupgroup.com/wp-content/uploads/2023/06/Stage-Platform.jpg', 4.7);
 
--- --------------------------------------------------------
-
---
--- Table structure for table `budgets`
---
-
-CREATE TABLE `budgets` (
-  `id` int(11) NOT NULL,
-  `event_id` int(11) DEFAULT NULL,
-  `category` varchar(50) DEFAULT NULL,
-  `amount` decimal(10,2) DEFAULT NULL,
-  `spent` decimal(10,2) DEFAULT 0.00
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `events`
---
-
-CREATE TABLE `events` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `title` varchar(100) NOT NULL,
-  `type` varchar(50) DEFAULT NULL,
-  `theme` varchar(100) DEFAULT NULL,
-  `date` date DEFAULT NULL,
-  `location` varchar(255) DEFAULT NULL,
-  `bannerImage` varchar(255) DEFAULT NULL,
-  `description` text DEFAULT NULL,
-  `status` enum('upcoming','cancelled','completed') DEFAULT 'upcoming',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `expected_guests` int(11) NOT NULL DEFAULT 0,
-  `budget` decimal(10,2) DEFAULT 0.00
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `events`
---
-
-INSERT INTO `events` (`id`, `user_id`, `title`, `type`, `theme`, `date`, `location`, `bannerImage`, `description`, `status`, `created_at`, `expected_guests`, `budget`) VALUES
-(1, 1, 'Summer Wedding Reception', 'wedding', NULL, '2025-07-15', 'Crystal Gardens', 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg', 'An elegant evening wedding reception', 'upcoming', '2025-05-22 09:23:46', 0, 0.00),
-(2, 1, 'Corporate Annual Meeting', 'corporate', NULL, '2025-03-20', 'Grand Conference Center', 'https://images.pexels.com/photos/7175435/pexels-photo-7175435.jpeg', 'Annual shareholders meeting', 'completed', '2025-05-22 09:23:46', 0, 0.00),
-(3, 1, 'Sarah\'s Sweet 16', 'birthday', NULL, '2025-04-10', 'Sunset Lounge', 'https://images.pexels.com/photos/2072181/pexels-photo-2072181.jpeg', 'Sweet sixteen birthday celebration', 'upcoming', '2025-05-22 09:23:46', 0, 0.00),
-(4, 1, 'Annual Charity Gala', 'social', NULL, '2025-09-05', 'Hilton Ballroom', 'https://images.pexels.com/photos/374870/pexels-photo-374870.jpeg', 'Fundraising event for local charities', 'completed', '2025-05-22 09:23:46', 0, 0.00),
-(5, 1, 'Marketing Workshop', 'corporate', NULL, '2025-06-12', 'Innovation Hub', 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg', 'Hands-on marketing strategies training', 'upcoming', '2025-05-22 09:23:46', 0, 0.00),
-(6, 1, 'Birthday Bash for Jake', 'birthday', NULL, '2025-08-20', 'Jake\'s Backyard', 'https://www.parents.com/thmb/--pZafKsgGSb8NrJVrV7lqJId9g=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/BirthdayParty-GettyImages-1600792233-c2a961509556414f9f41b92b8471a551.jpg', 'Casual birthday party with friends', 'completed', '2025-05-22 09:23:46', 0, 0.00),
-(7, 1, 'Product Launch Event', 'corporate', NULL, '2025-05-15', 'Tech Center Auditorium', 'https://images.pexels.com/photos/1181355/pexels-photo-1181355.jpeg', 'Launch of new software product', 'upcoming', '2025-05-22 09:23:46', 0, 0.00),
-(8, 1, 'Community Picnic', 'social', NULL, '2025-07-10', 'City Park', 'https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg', 'Annual community gathering and picnic', 'completed', '2025-05-22 09:23:46', 0, 0.00),
-(9, 1, 'Corporate Team Building', 'corporate', NULL, '2025-10-08', 'Adventure Retreat', 'https://images.pexels.com/photos/3184352/pexels-photo-3184352.jpeg', 'Outdoor team building activities', 'completed', '2025-05-22 09:23:46', 0, 0.00),
-(10, 1, 'Laura\s 30th Birthday', 'birthday', NULL, '2025-11-21', 'Downtown Rooftop', 'https://images.pexels.com/photos/1231231/pexels-photo-1231231.jpeg', 'Elegant 30th birthday celebration', 'upcoming', '2025-05-22 09:23:46', 0, 0.00),
-(11, 1, 'ahmed birthday', 'birthday', '', '2025-05-27', 'Tangier, Morroco', 'https://t3.ftcdn.net/jpg/04/42/62/12/360_F_442621279_PYhie13pVGcSSYTAm1eqlC3e7Lcy0oNV.jpg', '', 'upcoming', '2025-05-27 11:51:14', 0, 0.00);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `event_vendors`
---
-
-CREATE TABLE `event_vendors` (
-  `id` int(11) NOT NULL,
-  `event_id` int(11) DEFAULT NULL,
-  `vendor_id` int(11) DEFAULT NULL,
-  `notes` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `guests`
---
-
-CREATE TABLE `guests` (
-  `id` int(11) NOT NULL,
-  `event_id` int(11) DEFAULT NULL,
-  `name` varchar(100) DEFAULT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `phone` varchar(20) DEFAULT NULL,
-  `rsvp_status` enum('Pending','Accepted','Declined') DEFAULT 'Pending'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tasks`
---
-
-CREATE TABLE `tasks` (
-  `id` int(11) NOT NULL,
-  `event_id` int(11) DEFAULT NULL,
-  `title` varchar(100) DEFAULT NULL,
-  `due_date` date DEFAULT NULL,
-  `completed` tinyint(1) DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `tasks`
---
-
-INSERT INTO `tasks` (`id`, `event_id`, `title`, `due_date`, `completed`) VALUES
-(1, 11, 'Confirm details with Bloom & Petal', NULL, 0),
-(2, 11, 'Review contract from Bloom & Petal', NULL, 0),
-(3, 11, 'Make initial payment to Bloom & Petal', NULL, 0),
-(4, 11, 'Confirm details with SnapShot Studios', NULL, 0),
-(5, 11, 'Review contract from SnapShot Studios', NULL, 0),
-(6, 11, 'Make initial payment to SnapShot Studios', NULL, 0);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `users`
---
-
-CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`id`, `name`, `email`, `password`, `created_at`) VALUES
-(1, 'admin', 'yassir@gmail.com', '$2y$10$cKiGfHgvDF/D/uER2.t3fuHyOg1JV2isDtL.rGS6jWdTxB9LJ7kVC', '2025-05-22 09:23:26');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `vendors`
---
-
-CREATE TABLE `vendors` (
-  `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `category` varchar(50) DEFAULT NULL,
-  `description` text DEFAULT NULL,
-  `phone` varchar(20) DEFAULT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `rating` float DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `image` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `vendors`
---
-
-INSERT INTO `vendors` (`id`, `name`, `category`, `description`, `phone`, `email`, `rating`, `created_at`, `image`) VALUES
-(1, 'Elegant Events Venue', 'venue', 'Luxury event space with modern amenities', '(555) 123-4567', 'info@elegantevents.com', 4.8, '2025-05-22 13:21:32', 'https://prestigiousvenues.com/wp-content/uploads/bb-plugin/cache/Gala-Dinner-Venue-In-London-Gibson-Hall-Prestigious-Venues-panorama-e59dc799b93c25c0dc960e904af705e0-59099a98687f6.jpg'),
-(2, 'Divine Catering Co.', 'catering', 'Gourmet catering for all occasions', '(555) 234-5678', 'events@divinecatering.com', 4.9, '2025-05-22 13:21:32', 'https://cdn-ikpened.nitrocdn.com/IASuVSfAFufVGDVSWpDAfIIJMmSefhYb/assets/images/optimized/rev-866e6ae/sadhgurucatering.com/wp-content/uploads/2023/12/dinner-catering-services-in-ghaziabad-and-noida-e1731795719614.jpg'),
-(3, 'Bloom & Petal', 'florist', 'Creative floral designs and arrangements', '(555) 345-6789', 'hello@bloomandpetal.com', 4.7, '2025-05-22 13:21:32', 'https://asset.bloomnation.com/c_pad,d_vendor:global:catalog:product:image.png,f_auto,fl_preserve_transparency,q_auto/v1707205630/vendor/7726/catalog/product/2/0/20210825072528_file_6125f068edb65_6125f07d409c1._6126c9d712420._6126c9d9369da..png'),
-(4, 'SnapShot Studios', 'photography', 'Professional photography services for events', '(555) 456-7890', 'contact@snapshotstudios.com', 4.6, '2025-05-22 13:21:32', 'https://www.gpdowntown.com/wp-content/uploads/2018/08/AK9W2808a-1024x1024.jpg'),
-(5, 'SoundWave Entertainment', 'entertainment', 'Live bands and DJs for all occasions', '(555) 567-8901', 'bookings@soundwaveent.com', 4.5, '2025-05-22 13:21:32', 'https://cdn0.weddingwire.com/vendor/771810/3_2/960/jpg/1539283650-ad2496ce319f4f2d-1539283648-47d0919af2be09ce-1539283646989-4-DJ33330181006_2019.jpeg'),
-(6, 'Gourmet Delights', 'catering', 'Exquisite gourmet dishes tailored to your event', '(555) 678-9012', 'info@gourmetdelights.com', 4.8, '2025-05-22 13:21:32', 'https://www.priestleys-gourmet.com.au/wp-content/uploads/Picture-1.png'),
-(7, 'Floral Fantasies', 'florist', 'Bespoke floral arrangements for special events', '(555) 789-0123', 'orders@floralfantasies.com', 4.7, '2025-05-22 13:21:32', 'https://cdn-imgix.headout.com/media/images/c2031e9f0c644fd7f8b252cb9f14b191-Floral-Fantasy-2.jpg?auto=format&w=900&h=562.5&q=90&ar=16%3A10&crop=faces%2Ccenter&fit=crop'),
-(8, 'Grand Gala Venues', 'venue', 'Spacious and elegant venues for large gatherings', '(555) 890-1234', 'reservations@grandgala.com', 4.9, '2025-05-22 13:21:32', 'https://bluevista.info/cdn/shop/products/2019-04-06EricGraceWedding-34_2000x.jpg?v=1588447368'),
-(9, 'Moments Captured', 'photography', 'Capturing your special moments with precision', '(555) 901-2345', 'services@momentscaptured.com', 4.6, '2025-05-22 13:21:32', 'https://www.photojaanic.com/blog/wp-content/uploads/sites/2/2017/03/00-Lead.jpg'),
-(10, 'Rhythm & Beats', 'entertainment', 'High-energy performances to liven up your event', '(555) 012-3456', 'inquiries@rhythmandbeats.com', 4.5, '2025-05-22 13:21:32', 'https://plus.pointblankmusicschool.com/wp-content/uploads/2024/06/DSC1904.jpg');
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `budgets`
---
-ALTER TABLE `budgets`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `event_id` (`event_id`);
-
---
--- Indexes for table `events`
---
-ALTER TABLE `events`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
-
---
--- Indexes for table `event_vendors`
---
-ALTER TABLE `event_vendors`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `event_id` (`event_id`),
-  ADD KEY `vendor_id` (`vendor_id`);
-
---
--- Indexes for table `guests`
---
-ALTER TABLE `guests`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `event_id` (`event_id`);
-
---
--- Indexes for table `tasks`
---
-ALTER TABLE `tasks`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `event_id` (`event_id`);
-
---
--- Indexes for table `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`);
-
---
--- Indexes for table `vendors`
---
-ALTER TABLE `vendors`
-  ADD PRIMARY KEY (`id`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `budgets`
---
-ALTER TABLE `budgets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `events`
---
-ALTER TABLE `events`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
-
---
--- AUTO_INCREMENT for table `event_vendors`
---
-ALTER TABLE `event_vendors`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `guests`
---
-ALTER TABLE `guests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `tasks`
---
-ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT for table `users`
---
-ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT for table `vendors`
---
-ALTER TABLE `vendors`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `budgets`
---
-ALTER TABLE `budgets`
-  ADD CONSTRAINT `budgets_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `events`
---
-ALTER TABLE `events`
-  ADD CONSTRAINT `events_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `event_vendors`
---
-ALTER TABLE `event_vendors`
-  ADD CONSTRAINT `event_vendors_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`),
-  ADD CONSTRAINT `event_vendors_ibfk_2` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`);
-
---
--- Constraints for table `guests`
---
-ALTER TABLE `guests`
-  ADD CONSTRAINT `guests_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `tasks`
---
-ALTER TABLE `tasks`
-  ADD CONSTRAINT `tasks_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE;
-COMMIT;
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+-- Insert prices for each vendor for each type (id_type: 1=Wedding, 2=Birthday, 3=Corporate, 4=Concert)
+INSERT INTO vendor_type (id_vendor, id_type, price) VALUES
+(1, 1, 1500.00), (1, 2, 800.00), (1, 3, 2000.00), (1, 4, 1200.00),
+(2, 1, 1000.00), (2, 2, 500.00), (2, 3, 1500.00), (2, 4, 800.00),
+(3, 1, 1200.00), (3, 2, 600.00), (3, 3, 1800.00), (3, 4, 2000.00),
+(4, 1, 800.00), (4, 2, 400.00), (4, 3, 1000.00), (4, 4, 600.00),
+(5, 1, 2500.00), (5, 2, 1000.00), (5, 3, 3000.00), (5, 4, 1500.00),
+(6, 1, 600.00), (6, 2, 300.00), (6, 3, 800.00), (6, 4, 500.00),
+(7, 1, 900.00), (7, 2, 450.00), (7, 3, 1200.00), (7, 4, 700.00),
+(8, 1, 1100.00), (8, 2, 550.00), (8, 3, 1400.00), (8, 4, 900.00),
+(9, 1, 1300.00), (9, 2, 650.00), (9, 3, 1600.00), (9, 4, 1100.00),
+(10, 1, 2000.00), (10, 2, 900.00), (10, 3, 2500.00), (10, 4, 1300.00),
+(11, 1, 1400.00), (11, 2, 700.00), (11, 3, 1800.00), (11, 4, 1000.00),
+(12, 1, 850.00), (12, 2, 400.00), (12, 3, 1100.00), (12, 4, 600.00),
+(13, 1, 950.00), (13, 2, 450.00), (13, 3, 1200.00), (13, 4, 700.00),
+(14, 1, 1700.00), (14, 2, 800.00), (14, 3, 2200.00), (14, 4, 1200.00),
+(15, 1, 2000.00), (15, 2, 900.00), (15, 3, 2500.00), (15, 4, 1300.00),
+(16, 1, 1100.00), (16, 2, 550.00), (16, 3, 1400.00), (16, 4, 800.00),
+(17, 1, 1300.00), (17, 2, 650.00), (17, 3, 1600.00), (17, 4, 1000.00),
+(18, 1, 1000.00), (18, 2, 500.00), (18, 3, 1300.00), (18, 4, 700.00),
+(19, 1, 1600.00), (19, 2, 800.00), (19, 3, 2000.00), (19, 4, 1100.00),
+(20, 1, 1800.00), (20, 2, 900.00), (20, 3, 2300.00), (20, 4, 1200.00);

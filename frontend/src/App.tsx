@@ -9,9 +9,11 @@ import  Login  from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import {EventList}  from './pages/events/EventList'; 
-import { EventForm } from './pages/events/EventForm';
+import  {EventForm}  from './pages/events/EventForm';
 import { EventDetails } from './pages/events/EventDetails';
 import { VendorList } from './pages/vendors/VendorList';
+import { VendorDetails } from './pages/vendors/VendorDetails';
+
 
 
 
@@ -73,6 +75,7 @@ function AppRoutes() {
         } 
       />
 
+      <Route path="/events/edit/:id" element={<EventForm />} />
       <Route 
         path="/events/:id" 
         element={
@@ -87,6 +90,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <VendorList />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/vendors/:id" 
+        element={
+          <ProtectedRoute>
+            <VendorDetails />
           </ProtectedRoute>
         } 
       />

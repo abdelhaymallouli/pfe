@@ -25,21 +25,29 @@ import { Card, CardHeader, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../contexts/AuthContext';
 
-// Update schema to include budget
+// Map event type names to id_type
+const eventTypeMap: Record<string, number> = {
+  wedding: 1,
+  birthday: 2,
+  corporate: 3,
+  concert: 4,
+};
+
+// Update schema to align with database
 const eventSchema = z.object({
   title: z.string().min(1, 'Event name is required'),
   type: z.string().min(1, 'Event type is required'),
-  date: z.string().min(1, 'Date is required').transform(val => new Date(val).toISOString().split('T')[0]), // Format to YYYY-MM-DD
-  location: z.string().min(1, 'Location is required'),
+  date: z.string().min(1, 'Date is required').transform(val => new Date(val).toISOString().split('T')[0]),
+  lieu: z.string().min(1, 'Location is required'),
   theme: z.string().optional().default(''),
   description: z.string().optional().default(''),
-  expectedGuests: z.string().transform(val => parseInt(val, 10)).refine(val => val >= 0, {
+  expected_guests: z.string().transform(val => parseInt(val, 10)).refine(val => val >= 0, {
     message: 'Expected guests must be a positive number',
   }),
   budget: z.string().transform(val => parseFloat(val)).refine(val => val >= 0, {
     message: 'Budget must be a positive number',
   }),
-  bannerImage: z.instanceof(File).optional().nullable(),
+  image_banniere: z.instanceof(File).optional().nullable(),
 });
 
 type EventFormValues = z.infer<typeof eventSchema>;
@@ -50,13 +58,18 @@ interface Vendor {
   category: string;
   description: string;
   rating: number;
-  price?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  website?: string;
+  price: string;
+  contactEmail: string;
+  contactPhone: string;
   image: string;
-  phone?: string;
-  email?: string;
+}
+
+interface Requete {
+  id: string;
+  titre: string;
+  description: string | null;
+  date_limite: string | null;
+  statut: 'Open' | 'In Progress' | 'Completed' | 'Cancelled';
 }
 
 export const EventForm = () => {
@@ -68,33 +81,41 @@ export const EventForm = () => {
   const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([]);
   const [isLoadingVendors, setIsLoadingVendors] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [bannerImage, setBannerImage] = useState<File | null>(null);
+  const [image_banniere, setImageBanniere] = useState<File | null>(null);
   const [bannerImagePreview, setBannerImagePreview] = useState<string>('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
 
   const [eventData, setEventData] = useState({
     basicInfo: null as EventFormValues | null,
     selectedVendors: [] as Vendor[],
-    vendorTasks: {} as Record<string, { id: string; title: string; completed: boolean }[]>,
-    budget: 0, // Initialize as 0, will be set from form
-    bannerImageUrl: '',
+    requetes: {} as Record<string, Requete[]>,
+    budget: 0,
+    image_banniere_url: '',
   });
 
-  const { register, handleSubmit, formState: { errors } } = useForm<EventFormValues>({
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
       title: '',
       type: '',
       date: '',
-      location: '',
+      lieu: '',
       theme: '',
       description: '',
-      expectedGuests: 0,
+      expected_guests: 0,
       budget: 0,
-      bannerImage: null,
+      image_banniere: null,
     },
   });
+
+  const eventType = watch('type');
+
+  useEffect(() => {
+    if (eventType) {
+      setSelectedTypeId(eventTypeMap[eventType.toLowerCase()] || null);
+    }
+  }, [eventType]);
 
   const handleBannerImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -107,7 +128,7 @@ export const EventForm = () => {
         alert('Image size must be less than 5MB');
         return;
       }
-      setBannerImage(file);
+      setImageBanniere(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setBannerImagePreview(e.target?.result as string);
@@ -135,22 +156,27 @@ export const EventForm = () => {
   };
 
   const removeBannerImage = () => {
-    setBannerImage(null);
+    setImageBanniere(null);
     setBannerImagePreview('');
-    setEventData(prev => ({ ...prev, bannerImageUrl: '' }));
+    setEventData(prev => ({ ...prev, image_banniere_url: '' }));
   };
 
   useEffect(() => {
     const fetchVendors = async () => {
+      if (!selectedTypeId) return;
       setIsLoadingVendors(true);
       try {
-        const response = await fetch('http://localhost/pfe/backend/src/api/vendor.php');
+        const response = await fetch(`http://localhost/pfe/backend/src/api/vendor.php?type_id=${selectedTypeId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch vendors');
         }
         const data = await response.json();
         const vendorData = Array.isArray(data) ? data : (data.data || data.vendors || []);
-        setVendors(vendorData);
+        setVendors(vendorData.map((v: any) => ({
+          ...v,
+          price: `$${parseFloat(v.price || 0).toFixed(2)}`,
+          rating: parseFloat(v.rating || 0),
+        })));
         setFilteredVendors(vendorData);
       } catch (error) {
         console.error('Error fetching vendors:', error);
@@ -162,7 +188,7 @@ export const EventForm = () => {
       }
     };
     fetchVendors();
-  }, []);
+  }, [selectedTypeId]);
 
   useEffect(() => {
     let filtered = vendors;
@@ -172,20 +198,15 @@ export const EventForm = () => {
         vendor.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    if (selectedCategory) {
-      filtered = filtered.filter(vendor =>
-        vendor.category.toLowerCase() === selectedCategory.toLowerCase()
-      );
-    }
     setFilteredVendors(filtered);
-  }, [vendors, searchTerm, selectedCategory]);
+  }, [vendors, searchTerm]);
 
   const handleBasicInfoSubmit = async (data: EventFormValues) => {
-    let bannerImageUrl = '';
-    if (bannerImage) {
+    let image_banniere_url = '';
+    if (image_banniere) {
       setIsUploadingImage(true);
       try {
-        bannerImageUrl = await uploadBannerImage(bannerImage);
+        image_banniere_url = await uploadBannerImage(image_banniere);
       } catch (error) {
         console.error('Error uploading banner image:', error);
         alert(error instanceof Error ? error.message : 'Failed to upload banner image. Please try again.');
@@ -196,9 +217,9 @@ export const EventForm = () => {
     }
     setEventData(prev => ({
       ...prev,
-      basicInfo: { ...data, bannerImage: null },
-      bannerImageUrl,
-      budget: data.budget, // Store budget from form
+      basicInfo: { ...data, image_banniere: null },
+      image_banniere_url,
+      budget: data.budget,
     }));
     setCurrentStep(2);
   };
@@ -209,62 +230,70 @@ export const EventForm = () => {
       const newVendors = isSelected
         ? prev.selectedVendors.filter(v => v.id !== vendor.id)
         : [...prev.selectedVendors, vendor];
-      const newTasks = { ...prev.vendorTasks };
+      const newRequetes = { ...prev.requetes };
       if (!isSelected) {
         const timestamp = Date.now();
-        newTasks[vendor.id] = [
-          { id: `${vendor.id}-${timestamp}-1`, title: `Confirm details with ${vendor.name}`, completed: false },
-          { id: `${vendor.id}-${timestamp}-2`, title: `Review contract from ${vendor.name}`, completed: false },
-          { id: `${vendor.id}-${timestamp}-3`, title: `Make initial payment to ${vendor.name}`, completed: false },
+        newRequetes[vendor.id] = [
+          {
+            id: `${vendor.id}-${timestamp}-1`,
+            titre: `Confirm details with ${vendor.name}`,
+            description: null,
+            date_limite: null,
+            statut: 'Open',
+          },
         ];
       } else {
-        delete newTasks[vendor.id];
+        delete newRequetes[vendor.id];
       }
       return {
         ...prev,
         selectedVendors: newVendors,
-        vendorTasks: newTasks,
+        requetes: newRequetes,
       };
     });
   };
 
-  const addTask = (vendorId: string, taskTitle: string) => {
+  const addRequete = (vendorId: string, titre: string) => {
     setEventData(prev => ({
       ...prev,
-      vendorTasks: {
-        ...prev.vendorTasks,
+      requetes: {
+        ...prev.requetes,
         [vendorId]: [
-          ...(prev.vendorTasks[vendorId] || []),
-          { id: `${vendorId}-${Date.now()}`, title: taskTitle, completed: false },
+          ...(prev.requetes[vendorId] || []),
+          {
+            id: `${vendorId}-${Date.now()}`,
+            titre,
+            description: null,
+            date_limite: null,
+            statut: 'Open',
+          },
         ],
       },
     }));
   };
 
-  const removeTask = (vendorId: string, taskId: string) => {
+  const removeRequete = (vendorId: string, requeteId: string) => {
     setEventData(prev => ({
       ...prev,
-      vendorTasks: {
-        ...prev.vendorTasks,
-        [vendorId]: prev.vendorTasks[vendorId].filter(task => task.id !== taskId),
+      requetes: {
+        ...prev.requetes,
+        [vendorId]: prev.requetes[vendorId].filter(r => r.id !== requeteId),
       },
     }));
   };
 
-  const toggleTaskComplete = (vendorId: string, taskId: string) => {
+  const toggleRequeteStatus = (vendorId: string, requeteId: string) => {
     setEventData(prev => ({
       ...prev,
-      vendorTasks: {
-        ...prev.vendorTasks,
-        [vendorId]: prev.vendorTasks[vendorId].map(task =>
-          task.id === taskId ? { ...task, completed: !task.completed } : task
+      requetes: {
+        ...prev.requetes,
+        [vendorId]: prev.requetes[vendorId].map(r =>
+          r.id === requeteId
+            ? { ...r, statut: r.statut === 'Open' ? 'In Progress' : r.statut === 'In Progress' ? 'Completed' : 'Open' }
+            : r
         ),
       },
     }));
-  };
-
-  const getUniqueCategories = () => {
-    return Array.from(new Set(vendors.map(vendor => vendor.category)));
   };
 
   const handleCreateEvent = async () => {
@@ -284,19 +313,14 @@ export const EventForm = () => {
       const payload = {
         user_id: currentUser.id,
         title: eventData.basicInfo.title,
-        type: eventData.basicInfo.type,
-        theme: eventData.basicInfo.theme || '',
+        type_id: eventTypeMap[eventData.basicInfo.type.toLowerCase()],
         date: eventData.basicInfo.date,
-        location: eventData.basicInfo.location,
-        bannerImage: eventData.bannerImageUrl || '',
+        location: eventData.basicInfo.lieu,
+        image_banniere: eventData.image_banniere_url || '',
         description: eventData.basicInfo.description || '',
-        expectedGuests: eventData.basicInfo.expectedGuests,
+        expected_guests: eventData.basicInfo.expected_guests,
         budget: eventData.budget,
-        vendors: eventData.selectedVendors.map(v => v.id),
-        tasks: Object.values(eventData.vendorTasks).flat().map(t => ({
-          title: t.title,
-          completed: t.completed,
-        })),
+        requetes: Object.values(eventData.requetes).flat(),
       };
 
       console.log('Sending payload:', payload);
@@ -365,15 +389,15 @@ export const EventForm = () => {
                       <option value="wedding">Wedding</option>
                       <option value="birthday">Birthday</option>
                       <option value="corporate">Corporate</option>
-                      <option value="social">Social</option>
+                      <option value="concert">Concert</option>
                     </select>
                     {errors.type && (
                       <p className="mt-1 text-sm text-error-600">{errors.type.message}</p>
                     )}
                   </div>
                   <Input
-                    type="datetime-local"
-                    label="Date and Time"
+                    type="date"
+                    label="Date"
                     leftIcon={<Calendar size={18} />}
                     error={errors.date?.message}
                     {...register('date')}
@@ -382,8 +406,8 @@ export const EventForm = () => {
                 <Input
                   label="Location"
                   leftIcon={<MapPin size={18} />}
-                  error={errors.location?.message}
-                  {...register('location')}
+                  error={errors.lieu?.message}
+                  {...register('lieu')}
                 />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Input
@@ -395,8 +419,8 @@ export const EventForm = () => {
                     type="number"
                     label="Expected Guests"
                     leftIcon={<Users size={18} />}
-                    error={errors.expectedGuests?.message}
-                    {...register('expectedGuests')}
+                    error={errors.expected_guests?.message}
+                    {...register('expected_guests')}
                   />
                 </div>
                 <Input
@@ -432,7 +456,7 @@ export const EventForm = () => {
                         <div className="flex text-sm text-gray-600">
                           <label
                             htmlFor="banner-upload"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500"
                           >
                             <span>Upload a banner image</span>
                             <input
@@ -488,7 +512,7 @@ export const EventForm = () => {
           <Card>
             <CardHeader>
               <h2 className="text-xl font-semibold text-gray-900">Select Vendors</h2>
-              <p className="text-sm text-gray-500">Choose the vendors for your event</p>
+              <p className="text-sm text-gray-500">Choose vendors for your event</p>
             </CardHeader>
             <CardContent>
               <div className="mb-6 space-y-4">
@@ -498,20 +522,6 @@ export const EventForm = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <div className="flex gap-2">
-                  <select
-                    className="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                  >
-                    <option value="">All Categories</option>
-                    {getUniqueCategories().map(category => (
-                      <option key={category} value={category}>
-                        {category.charAt(0).toUpperCase() + category.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
               {isLoadingVendors ? (
                 <div className="flex items-center justify-center py-8">
@@ -520,7 +530,7 @@ export const EventForm = () => {
                 </div>
               ) : filteredVendors.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No vendors found. Please check your connection or try again.</p>
+                  <p className="text-gray-500">No vendors found for this event type.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -557,10 +567,9 @@ export const EventForm = () => {
                             </div>
                           </div>
                           <p className="mt-1 text-sm text-gray-500">{vendor.description}</p>
-                          {(vendor.phone || vendor.contactPhone) && (
-                            <p className="mt-1 text-xs text-gray-400">
-                              {vendor.phone || vendor.contactPhone}
-                            </p>
+                          <p className="mt-1 text-sm text-gray-600">Price: {vendor.price}</p>
+                          {vendor.contactPhone && (
+                            <p className="mt-1 text-xs text-gray-400">{vendor.contactPhone}</p>
                           )}
                         </div>
                       </div>
@@ -604,29 +613,31 @@ export const EventForm = () => {
         return (
           <Card>
             <CardHeader>
-              <h2 className="text-xl font-semibold text-gray-900">Vendor Tasks</h2>
-              <p className="text-sm text-gray-500">Manage tasks for each vendor</p>
+              <h2 className="text-xl font-semibold text-gray-900">Requirements (Requetes)</h2>
+              <p className="text-sm text-gray-500">Manage requirements for each vendor</p>
             </CardHeader>
             <CardContent>
               {eventData.selectedVendors.map(vendor => (
                 <div key={vendor.id} className="mb-6">
                   <h3 className="font-medium text-gray-900 mb-2">{vendor.name}</h3>
                   <div className="space-y-2">
-                    {eventData.vendorTasks[vendor.id]?.map(task => (
-                      <div key={task.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                    {eventData.requetes[vendor.id]?.map(requete => (
+                      <div key={requete.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                         <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={task.completed}
-                            onChange={() => toggleTaskComplete(vendor.id, task.id)}
-                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                          />
-                          <span className={`ml-2 ${task.completed ? 'line-through text-gray-400' : ''}`}>
-                            {task.title}
-                          </span>
+                          <select
+                            value={requete.statut}
+                            onChange={() => toggleRequeteStatus(vendor.id, requete.id)}
+                            className="mr-2 rounded-md border-gray-300 text-sm"
+                          >
+                            <option value="Open">Open</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
+                          <span>{requete.titre}</span>
                         </div>
                         <button
-                          onClick={() => removeTask(vendor.id, task.id)}
+                          onClick={() => removeRequete(vendor.id, requete.id)}
                           className="text-gray-400 hover:text-error-500"
                         >
                           <X size={16} />
@@ -635,12 +646,12 @@ export const EventForm = () => {
                     ))}
                     <div className="mt-2">
                       <Input
-                        placeholder="Add new task..."
+                        placeholder="Add new requete..."
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {
                             const input = e.target as HTMLInputElement;
                             if (input.value.trim()) {
-                              addTask(vendor.id, input.value.trim());
+                              addRequete(vendor.id, input.value.trim());
                               input.value = '';
                             }
                           }
@@ -699,11 +710,11 @@ export const EventForm = () => {
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-gray-500">Location</dt>
-                        <dd className="font-medium">{eventData.basicInfo?.location}</dd>
+                        <dd className="font-medium">{eventData.basicInfo?.lieu}</dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-gray-500">Expected Guests</dt>
-                        <dd className="font-medium">{eventData.basicInfo?.expectedGuests}</dd>
+                        <dd className="font-medium">{eventData.basicInfo?.expected_guests}</dd>
                       </div>
                       {eventData.basicInfo?.theme && (
                         <div className="flex justify-between">
@@ -736,17 +747,15 @@ export const EventForm = () => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Tasks</h3>
+                  <h3 className="font-medium text-gray-900 mb-2">Requirements (Requetes)</h3>
                   <div className="space-y-2">
-                    {Object.values(eventData.vendorTasks)
+                    {Object.values(eventData.requetes)
                       .flat()
-                      .map(task => (
-                        <div key={task.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                          <span className={task.completed ? 'line-through text-gray-400' : ''}>
-                            {task.title}
-                          </span>
-                          <Badge variant={task.completed ? 'success' : 'secondary'}>
-                            {task.completed ? 'Completed' : 'Pending'}
+                      .map(requete => (
+                        <div key={requete.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                          <span>{requete.titre}</span>
+                          <Badge variant={requete.statut === 'Completed' ? 'success' : 'secondary'}>
+                            {requete.statut}
                           </Badge>
                         </div>
                       ))}
@@ -814,7 +823,7 @@ export const EventForm = () => {
         <div className="flex justify-between mt-2 text-sm">
           <span>Basic Info</span>
           <span>Vendors</span>
-          <span>Tasks</span>
+          <span>Requetes</span>
           <span>Review</span>
         </div>
       </div>

@@ -172,13 +172,7 @@ export const EventDetails = () => {
                   Edit Event
                 </Button>
                 <Button variant="outline" fullWidth>
-                  Manage Guests
-                </Button>
-                <Button variant="outline" fullWidth>
                   View Budget
-                </Button>
-                <Button variant="outline" fullWidth>
-                  Task List
                 </Button>
               </div>
             </CardContent>

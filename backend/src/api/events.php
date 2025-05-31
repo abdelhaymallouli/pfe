@@ -17,7 +17,6 @@ try {
 
     if ($method === 'GET') {
         if (isset($_GET['id']) && is_numeric($_GET['id'])) {
-            // Handle GET request for a single event by ID
             $event = $controller->getEventById((int)$_GET['id']);
             ob_clean();
             if ($event) {
@@ -35,7 +34,6 @@ try {
             }
             exit;
         }
-        // Handle GET request to fetch all events
         $events = $controller->getEvents();
         ob_clean();
         http_response_code(200);
@@ -47,7 +45,6 @@ try {
     }
 
     if ($method === 'POST') {
-        // Get raw input
         $rawInput = file_get_contents('php://input');
         error_log("Raw POST input: " . $rawInput);
         
@@ -62,11 +59,9 @@ try {
             exit;
         }
 
-        // Log parsed input for debugging
         error_log("Parsed POST input: " . json_encode($input));
 
-        // Validate required fields
-        $required = ['user_id', 'title', 'type', 'date', 'location', 'expectedGuests'];
+        $required = ['user_id', 'title', 'type_id', 'date', 'location', 'expected_guests'];
         foreach ($required as $field) {
             if (!isset($input[$field])) {
                 ob_clean();
@@ -77,9 +72,7 @@ try {
                 ], JSON_THROW_ON_ERROR);
                 exit;
             }
-            
-            // Check for empty strings in required string fields
-            if (in_array($field, ['title', 'type', 'location']) && is_string($input[$field]) && empty(trim($input[$field]))) {
+            if (in_array($field, ['title', 'location']) && is_string($input[$field]) && empty(trim($input[$field]))) {
                 ob_clean();
                 http_response_code(400);
                 echo json_encode([
