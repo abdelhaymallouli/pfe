@@ -26,6 +26,12 @@ export const EventDetails = () => {
 
   useEffect(() => {
     const fetchEvent = async () => {
+      if (!id) {
+        setError('Event ID is missing');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
       try {
@@ -168,9 +174,11 @@ export const EventDetails = () => {
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-3">
-                <Button variant="outline" fullWidth>
-                  Edit Event
-                </Button>
+                <Link to={`/events/${id}/edit`} state={{ event, isEdit: true }}>
+                  <Button variant="outline" fullWidth>
+                    Edit Event
+                  </Button>
+                </Link>
                 <Link to={`/transactions/`}>
                   <Button variant="outline" fullWidth>
                     View Requests

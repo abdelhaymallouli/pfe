@@ -9,7 +9,6 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardContent } from '../../components/ui/Card';
 import { toast } from 'react-hot-toast';
 
-// Define interfaces
 interface Event {
   id: string;
   title: string;
@@ -34,11 +33,11 @@ const transactionSchema = z.object({
   vendorId: z.string().min(1, 'Vendor is required'),
   amount: z
     .string()
-    .transform((val) => (val ? parseFloat(val) : 0))
-    .refine((val) => val >= 0, {
+    .optional()
+    .transform((val) => (val ? parseFloat(val) : undefined))
+    .refine((val) => val === undefined || val >= 0, {
       message: 'Amount must be non-negative',
-    })
-    .optional(),
+    }),
   dueDate: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -59,7 +58,7 @@ export const AddTransactionForm = () => {
       eventId: '',
       transactionName: '',
       vendorId: '',
-      amount: 0,
+      amount: undefined,
       dueDate: '',
       notes: '',
     },
@@ -75,6 +74,11 @@ export const AddTransactionForm = () => {
   const eventId = watch('eventId');
   const vendorId = watch('vendorId');
 
+  // Debug form state and errors
+  useEffect(() => {
+    console.log('Form state:', { eventId, vendorId, errors, isSubmitting });
+  }, [eventId, vendorId, errors, isSubmitting]);
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -86,8 +90,11 @@ export const AddTransactionForm = () => {
           throw new Error(`HTTP error while fetching events! status: ${eventsResponse.status}`);
         }
         const eventsData = await eventsResponse.json();
+        if (!eventsData.success || !Array.isArray(eventsData.data)) {
+          throw new Error(eventsData.message || 'Invalid events response');
+        }
         setEvents(
-          (eventsData.data || []).map((event: any) => ({
+          eventsData.data.map((event: any) => ({
             id: event.id,
             title: event.title,
             budget: event.budget,
@@ -102,8 +109,11 @@ export const AddTransactionForm = () => {
           throw new Error(`HTTP error while fetching vendors! status: ${vendorsResponse.status}`);
         }
         const vendorsData = await vendorsResponse.json();
+        if (!Array.isArray(vendorsData)) {
+          throw new Error('Invalid vendors response');
+        }
         setVendors(
-          (vendorsData || []).map((vendor: any) => ({
+          vendorsData.map((vendor: any) => ({
             id: vendor.id,
             name: vendor.name,
             prices: vendor.prices,
@@ -130,18 +140,21 @@ export const AddTransactionForm = () => {
             throw new Error(`HTTP error while fetching event! status: ${response.status}`);
           }
           const eventData = await response.json();
-          console.log('Event API response:', eventData);
-          const event = eventData.data?.[0];
-          if (event && typeof event.id_type === 'number') {
+          console.log('Event API response:', JSON.stringify(eventData, null, 2));
+          if (!eventData.success || !eventData.data) {
+            throw new Error(eventData.message || `No event found for ID ${eventId}`);
+          }
+          const event = eventData.data;
+          if (typeof event.id_type === 'number') {
             setSelectedEventType(event.id_type);
           } else {
+            console.error('Event data missing or invalid id_type:', event);
+            toast.error('Event type not found for this event');
             setSelectedEventType(null);
-            toast.error('Event type not found in response');
-            console.error('Event data missing id_type:', event);
           }
         } catch (error) {
           console.error('Error fetching event type:', error);
-          toast.error('Failed to load event type');
+          toast.error(error instanceof Error ? error.message : 'Failed to load event type');
           setSelectedEventType(null);
         }
       };
@@ -150,13 +163,13 @@ export const AddTransactionForm = () => {
       setSelectedEventType(null);
       setVendorPrice(null);
       setSelectedVendor(null);
-      setValue('amount', 0);
+      setValue('amount', undefined);
     }
   }, [eventId, setValue]);
 
   useEffect(() => {
     console.log('Vendor ID or event type changed:', { vendorId, selectedEventType });
-    if (vendorId && selectedEventType) {
+    if (vendorId && selectedEventType && eventId) {
       const fetchVendorPrice = async () => {
         try {
           const response = await fetch(`http://localhost/pfe/backend/src/api/vendor.php?id=${vendorId}`);
@@ -164,7 +177,7 @@ export const AddTransactionForm = () => {
             throw new Error(`HTTP error while fetching vendor! status: ${response.status}`);
           }
           const vendorData = await response.json();
-          console.log('Vendor API response:', vendorData);
+          console.log('Vendor API response:', JSON.stringify(vendorData, null, 2));
           if (vendorData && vendorData.prices) {
             const pricePairs: PricePair[] = vendorData.prices.split(',').map((pair: string) => {
               const [typeId, price] = pair.split(':');
@@ -173,7 +186,7 @@ export const AddTransactionForm = () => {
             const price = pricePairs.find((pair) => pair.typeId === selectedEventType.toString())?.price || null;
             setVendorPrice(price);
             setSelectedVendor({ id: vendorData.id, name: vendorData.name, prices: vendorData.prices });
-            setValue('amount', price || 0);
+            setValue('amount', price ? price.toString() : undefined);
             if (!price) {
               console.warn('No price found for event type:', selectedEventType);
               toast.error('No price found for this vendor and event type');
@@ -181,33 +194,34 @@ export const AddTransactionForm = () => {
           } else {
             setVendorPrice(null);
             setSelectedVendor(null);
-            setValue('amount', 0);
+            setValue('amount', undefined);
             toast.error('Vendor price data not found');
           }
         } catch (error) {
           console.error('Error fetching vendor price:', error);
-          toast.error('Failed to load vendor price');
+          toast.error(error instanceof Error ? error.message : 'Failed to load vendor price');
           setVendorPrice(null);
           setSelectedVendor(null);
-          setValue('amount', 0);
+          setValue('amount', undefined);
         }
       };
       fetchVendorPrice();
     } else {
       setVendorPrice(null);
       setSelectedVendor(null);
-      setValue('amount', 0);
+      setValue('amount', undefined);
     }
-  }, [vendorId, selectedEventType, setValue, eventId]);
+  }, [vendorId, selectedEventType, eventId, setValue]);
 
   const onSubmit: SubmitHandler<TransactionFormValues> = async (data) => {
-    console.log('Form data before submission:', data);
+    console.log('onSubmit triggered with data:', data);
     console.log('Derived values:', { vendorPrice, selectedEventType, montant: vendorPrice ?? data.amount ?? 0 });
     try {
       const montant = vendorPrice ?? data.amount ?? 0;
       if (montant <= 0) {
-        console.log('Amount validation failed:', { vendorPrice, dataAmount: data.amount });
-        throw new Error('Amount must be greater than zero');
+        console.error('Amount validation failed:', { vendorPrice, dataAmount: data.amount });
+        toast.error('Amount must be greater than zero');
+        return;
       }
 
       const requestData = {
@@ -219,19 +233,20 @@ export const AddTransactionForm = () => {
         statut: 'Open',
         vendor_id: data.vendorId,
       };
-      console.log('Sending request:', requestData);
+      console.log('Sending request to requetes.php:', requestData);
 
       const response = await fetch('http://localhost/pfe/backend/src/api/requetes.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData),
-      }).catch((error) => {
-        console.error('Network error:', error);
-        throw new Error('Network error: Failed to reach the server');
       });
 
-      const responseData = await response.json();
-      console.log('API response status:', response.status, 'body:', responseData);
+      console.log('Response status:', response.status);
+      const responseData = await response.json().catch((err) => {
+        console.error('Error parsing response JSON:', err);
+        throw new Error('Failed to parse server response');
+      });
+      console.log('API response body:', responseData);
 
       if (!response.ok || !responseData.success) {
         console.error('API error:', responseData);
@@ -248,6 +263,12 @@ export const AddTransactionForm = () => {
     }
   };
 
+  // Fallback submit handler for debugging
+  const handleFormSubmit = (e: React.FormEvent) => {
+    console.log('Form submit event triggered');
+    handleSubmit(onSubmit)(e);
+  };
+
   if (!events.length || !vendors.length) {
     return <div className="text-red-600">Error: No events or vendors available. Please check the backend.</div>;
   }
@@ -256,8 +277,10 @@ export const AddTransactionForm = () => {
     return <div>Loading...</div>;
   }
 
+  console.log('Rendering form, errors:', errors);
+
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:pxx-8 py-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <Button
           variant="outline"
@@ -274,7 +297,7 @@ export const AddTransactionForm = () => {
           <p className="text-sm text-gray-500">Add a new transaction to an event</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleFormSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Event</label>
@@ -338,6 +361,9 @@ export const AddTransactionForm = () => {
                     {...register('amount')}
                   />
                 )}
+                {errors.amount && (
+                  <p className="mt-1 text-sm text-red-600">{errors.amount.message}</p>
+                )}
               </div>
             </div>
 
@@ -371,7 +397,7 @@ export const AddTransactionForm = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" isLoading={isSubmitting}>
+              <Button type="submit" isLoading={isSubmitting} disabled={isSubmitting}>
                 Add Transaction
               </Button>
             </div>

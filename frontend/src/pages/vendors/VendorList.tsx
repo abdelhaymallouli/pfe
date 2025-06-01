@@ -127,9 +127,9 @@ useEffect(() => {
                   <span className="ml-1 text-sm font-medium">{vendor.rating}</span>
                 </div>
               </div>
-              <Badge variant="secondary" className="mb-3">
-                {vendor.category.split(',').join(', ')}
-              </Badge>
+          <Badge variant="secondary" className="mb-3">
+            {vendor.category ? vendor.category.split(',').join(', ') : 'No Category'}
+          </Badge>
               <p className="text-gray-600 text-sm mb-4">{vendor.description}</p>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center text-gray-500">

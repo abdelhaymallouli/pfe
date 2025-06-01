@@ -5,25 +5,23 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Navbar } from './components/navigation/Navbar';
 import { Footer } from './components/navigation/Footer';
 import { Landing } from './pages/Landing';
-import  Login  from './pages/Login';
+import Login from './pages/Login';
 import Signup from './pages/Signup';
-import {Dashboard} from './pages/Dashboard';
-import {EventList}  from './pages/events/EventList'; 
-import  {EventForm}  from './pages/events/EventForm';
+import { Dashboard } from './pages/Dashboard';
+import { EventList } from './pages/events/EventList';
+import { EventForm } from './pages/events/EventForm';
 import { EventDetails } from './pages/events/EventDetails';
 import { VendorList } from './pages/vendors/VendorList';
 import { VendorDetails } from './pages/vendors/VendorDetails';
 import { TransactionTracker } from './pages/transactions/TransactionTracker';
 import { AddTransactionForm } from './pages/transactions/AddTransactionForm';
-
-
-
-
+import { AdminLogin } from './pages/Admin/AdminLogin';
+import { AdminDashboard } from './pages/Admin/AdminDashboard';
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
-  
+
   if (loading) {
     // Display a loading spinner while checking auth status
     return (
@@ -32,7 +30,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       </div>
     );
   }
-  
+
   return currentUser ? (
     <>{children}</>
   ) : (
@@ -48,79 +46,90 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Signup />} />
 
-      
       {/* Protected routes */}
-      <Route 
-        path="/dashboard" 
+      <Route
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
-        } 
+        }
       />
 
-      <Route 
-        path="/events" 
+      <Route
+        path="/events"
         element={
           <ProtectedRoute>
             <EventList />
           </ProtectedRoute>
-        } 
+        }
       />
 
-      <Route 
-        path="/events/new" 
+      <Route
+        path="/events/new"
         element={
           <ProtectedRoute>
             <EventForm />
           </ProtectedRoute>
-        } 
+        }
       />
 
-      <Route path="/events/edit/:id" element={<EventForm />} />
-      <Route 
-        path="/events/:id" 
+      <Route
+        path="/events/:id"
         element={
           <ProtectedRoute>
             <EventDetails />
           </ProtectedRoute>
-        } 
+        }
       />
 
-      <Route 
-        path="/vendors" 
+      <Route
+        path="/events/:id/edit"
+        element={
+          <ProtectedRoute>
+            <EventForm />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/vendors"
         element={
           <ProtectedRoute>
             <VendorList />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/vendors/:id" 
+      <Route
+        path="/vendors/:id"
         element={
           <ProtectedRoute>
             <VendorDetails />
           </ProtectedRoute>
-        } 
+        }
       />
 
-      <Route 
-        path="/transactions" 
+      <Route
+        path="/transactions"
         element={
           <ProtectedRoute>
             <TransactionTracker />
           </ProtectedRoute>
-        } 
+        }
       />
 
-            <Route 
-        path="/transactions/new" 
+      <Route
+        path="/transactions/new"
         element={
           <ProtectedRoute>
             <AddTransactionForm />
           </ProtectedRoute>
-        } 
+        }
       />
+
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
       {/* Fallback route */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -136,7 +145,7 @@ function App() {
           <AppRoutes />
         </main>
         <Footer />
-        <Toaster 
+        <Toaster
           position="top-right"
           toastOptions={{
             duration: 3000,

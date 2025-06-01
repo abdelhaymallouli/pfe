@@ -9,21 +9,22 @@ class RequeteController {
         $this->model = new RequeteModel($db);
     }
 
-    public function getRequetesByEventId(int $eventId) {
+    public function getRequetesByEventId(int $eventId, ?int $userId = null) {
         try {
-            return $this->model->getRequetesByEventId($eventId);
+            return $this->model->getByEventId($eventId, $userId);
         } catch (Exception $e) {
-            error_log("Error getting requetes for event ID $eventId: " . $e->getMessage());
+            error_log("Error getting requetes for event ID $eventId" . ($userId ? " and user ID $userId" : "") . ": " . $e->getMessage());
             return [];
         }
     }
 
     public function updateRequeteStatus(int $id, string $status) {
         try {
-            if (!in_array($status, ['Open', 'In Progress', 'Completed', 'Cancelled'])) {
-                throw new Exception('Invalid status value');
+            $updated = $this->model->updateRequeteStatus($id, $status);
+            if (!$updated) {
+                throw new Exception("No requete found with ID $id or status unchanged");
             }
-            return $this->model->updateRequeteStatus($id, $status);
+            return true;
         } catch (Exception $e) {
             error_log("Error updating requete ID $id: " . $e->getMessage());
             throw $e;

@@ -23,6 +23,8 @@ export const Navbar = () => {
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/events', label: 'Events' },
     { path: '/vendors', label: 'Vendors' },
+    { path: '/transactions', label: 'transactions' },
+
   ];
 
   // Links for non-authenticated users
@@ -101,14 +103,6 @@ export const Navbar = () => {
                         onClick={() => setIsProfileOpen(false)}
                       >
                         Your Profile
-                      </Link>
-                      <Link
-                        to="/account-settings"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        role="menuitem"
-                        onClick={() => setIsProfileOpen(false)}
-                      >
-                        Settings
                       </Link>
                       <button
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

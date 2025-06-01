@@ -18,6 +18,15 @@ class EventController {
         }
     }
 
+    public function getEventsByUserId(int $userId) {
+        try {
+            return $this->model->getEventsByUserId($userId); // Call new model method
+        } catch (Exception $e) {
+            error_log("Error getting events for user ID $userId: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getEventById(int $id) {
         try {
             $event = $this->model->getEventById($id);
@@ -72,6 +81,48 @@ class EventController {
             return $eventId;
         } catch (Exception $e) {
             error_log("Error adding event: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            throw $e;
+        }
+    }
+
+    public function updateEvent($data) {
+        try {
+            error_log("EventController::updateEvent received data: " . json_encode($data));
+
+            $required = ['id', 'user_id', 'title', 'type_id', 'date', 'location', 'expected_guests'];
+            foreach ($required as $field) {
+                if (!isset($data[$field]) || (is_string($data[$field]) && empty(trim($data[$field])))) {
+                    throw new Exception("Field '$field' is required");
+                }
+            }
+
+            $data['description'] = $data['description'] ?? '';
+            $data['image_banniere'] = $data['image_banniere'] ?? '';
+            $data['budget'] = $data['budget'] ?? 0;
+            $data['status'] = $data['status'] ?? 'Planned';
+            $data['expected_guests'] = (int)$data['expected_guests'];
+
+            if (!is_numeric($data['id'])) {
+                throw new Exception('id must be numeric');
+            }
+            if (!is_numeric($data['user_id'])) {
+                throw new Exception('user_id must be numeric');
+            }
+            if (!is_numeric($data['type_id'])) {
+                throw new Exception('type_id must be numeric');
+            }
+            if (!is_numeric($data['expected_guests'])) {
+                throw new Exception('expected_guests must be numeric');
+            }
+            if (isset($data['budget']) && !is_numeric($data['budget'])) {
+                throw new Exception('budget must be numeric');
+            }
+
+            $this->model->updateEvent($data);
+            error_log("Event updated successfully with ID: {$data['id']}");
+        } catch (Exception $e) {
+            error_log("Error updating event: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());
             throw $e;
         }

@@ -21,10 +21,10 @@ import { Button } from '../../components/ui/Button';
 interface Vendor {
   id: string;
   name: string;
-  category: string;
+  category: string | null; // Allow null
   description: string;
   rating: number;
-  prices: string; 
+  prices: string;
   contactEmail: string;
   contactPhone: string;
   image: string;
@@ -38,31 +38,40 @@ export const VendorDetails = () => {
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    fetch(`http://localhost/pfe/backend/src/api/vendor.php?id=${id}`)
-      .then(response => {
-        if (!response.ok) {
-          return response.text().then(text => {
-            throw new Error(`HTTP error! status: ${response.status}, response: ${text}`);
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        setVendor({
-          ...data,
-          rating: parseFloat(data.rating || 0),
-          prices: data.prices || '',
+useEffect(() => {
+  setLoading(true);
+  fetch(`http://localhost/pfe/backend/src/api/vendor.php?id=${id}`)
+    .then(response => {
+      if (!response.ok) {
+        return response.text().then(text => {
+          throw new Error(`HTTP error! status: ${response.status}, response: ${text}`);
         });
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching vendor:', error);
-        setError('Failed to load vendor details');
-        setLoading(false);
+      }
+      return response.text().then(text => {
+        console.log('Raw response:', text);
+        const data = JSON.parse(text);
+        console.log('Parsed vendor data:', data);
+        return data;
       });
-  }, [id]);
+    })
+    .then(data => {
+      if (!data || typeof data !== 'object') {
+        throw new Error('No vendor data returned');
+      }
+      setVendor({
+        ...data,
+        rating: parseFloat(data.rating || 0),
+        prices: data.prices || '',
+        category: data.category || 'Uncategorized',
+      });
+      setLoading(false);
+    })
+    .catch(error => {
+      console.error('Error fetching vendor:', error);
+      setError('Failed to load vendor details');
+      setLoading(false);
+    });
+}, [id]);
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -173,15 +182,21 @@ export const VendorDetails = () => {
                 {vendor.name}
               </h1>
               <div className="flex flex-wrap gap-2">
-                {vendor.category.split(',').map((cat, index) => (
-                  <Badge 
-                    key={index}
-                    className="bg-white/20 text-white backdrop-blur-sm border-white/30"
-                  >
-                    {cat.trim()}
-                  </Badge>
-                ))}
-              </div>
+                  {vendor.category && typeof vendor.category === 'string' ? (
+                    vendor.category.split(',').map((cat, index) => (
+                      <Badge 
+                        key={index}
+                        className="bg-white/20 text-white backdrop-blur-sm border-white/30"
+                      >
+                        {cat.trim()}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge className="bg-white/20 text-white backdrop-blur-sm border-white/30">
+                      No Category
+                    </Badge>
+                  )}
+                </div>
             </div>
           </div>
 
