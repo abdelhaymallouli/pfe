@@ -21,6 +21,8 @@ try {
             ob_clean();
             if ($event) {
                 http_response_code(200);
+                $event['budget'] = (float)$event['budget'];
+                $event['id_type'] = (int)$event['id_type'];
                 echo json_encode([
                     'success' => true,
                     'data' => $event
@@ -34,14 +36,30 @@ try {
             }
             exit;
         }
-        $events = $controller->getEvents();
-        ob_clean();
-        http_response_code(200);
-        echo json_encode([
-            'success' => true,
-            'data' => $events
-        ], JSON_THROW_ON_ERROR);
-        exit;
+
+        if (isset($_GET['userId']) && is_numeric($_GET['userId'])) {
+            $userId = (int)$_GET['userId'];
+            $events = $controller->getEventsByUserId($userId);
+            ob_clean();
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'data' => array_map(function($event) {
+                    $event['budget'] = (float)$event['budget'];
+                    $event['id_type'] = (int)$event['id_type'];
+                    return $event;
+                }, $events)
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        } else {
+            ob_clean();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'userId parameter is required'
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
     }
 
     if ($method === 'POST') {
@@ -114,6 +132,82 @@ try {
         exit;
     }
 
+    if ($method === 'PUT') {
+        $rawInput = file_get_contents('php://input');
+        $input = json_decode($rawInput, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            ob_clean();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid JSON: ' . json_last_error_msg()
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        if (!isset($input['id']) || !is_numeric($input['id'])) {
+            ob_clean();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Event ID is required and must be numeric'
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        try {
+            $controller->updateEvent($input);
+            ob_clean();
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Event updated successfully'
+            ], JSON_THROW_ON_ERROR);
+        } catch (Exception $e) {
+            error_log('Event update failed: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            ob_clean();
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to update event: ' . $e->getMessage()
+            ], JSON_THROW_ON_ERROR);
+        }
+        exit;
+    }
+
+    if ($method === 'DELETE') {
+        if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+            ob_clean();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Event ID is required and must be numeric'
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        try {
+            $controller->deleteEvent((int)$_GET['id']);
+            ob_clean();
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Event deleted successfully'
+            ], JSON_THROW_ON_ERROR);
+        } catch (Exception $e) {
+            error_log('Event deletion failed: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            ob_clean();
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to delete event: ' . $e->getMessage()
+            ], JSON_THROW_ON_ERROR);
+        }
+        exit;
+    }
+
     ob_clean();
     http_response_code(405);
     echo json_encode([
@@ -131,5 +225,5 @@ try {
         'message' => 'Server error: ' . $e->getMessage()
     ], JSON_THROW_ON_ERROR);
 }
-exit;
+ob_end_flush();
 ?>

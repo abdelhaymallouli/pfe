@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, ArrowLeft } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Calendar, MapPin, Users, ArrowLeft, Clock, CheckCircle, XCircle, CalendarCheck, ChevronDown, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { formatDate } from '../../lib/utils';
 
@@ -20,12 +19,22 @@ interface Event {
 
 export const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+
+  const statuses = ['Planned', 'Ongoing', 'Completed', 'Cancelled'];
 
   useEffect(() => {
     const fetchEvent = async () => {
+      if (!id) {
+        setError('Event ID is missing');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
       try {
@@ -69,15 +78,74 @@ export const EventDetails = () => {
   }, [id]);
 
   const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'upcoming':
-        return 'primary';
+    switch (status?.toLowerCase()) {
+      case 'planned':
+        return 'text-blue-500';
+      case 'ongoing':
+        return 'text-yellow-500';
       case 'completed':
-        return 'success';
+        return 'text-green-500';
       case 'cancelled':
-        return 'error';
+        return 'text-red-500';
       default:
-        return 'secondary';
+        return 'text-gray-500';
+    }
+  };
+
+  const getStatusIcon = (status?: string) => {
+    switch (status?.toLowerCase()) {
+      case 'planned':
+        return <CalendarCheck className="h-5 w-5" />;
+      case 'ongoing':
+        return <Clock className="h-5 w-5" />;
+      case 'completed':
+        return <CheckCircle className="h-5 w-5" />;
+      case 'cancelled':
+        return <XCircle className="h-5 w-5" />;
+      default:
+        return <Calendar className="h-5 w-5" />;
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!id || !event) return;
+
+    try {
+      const response = await fetch(`http://localhost/pfe/backend/src/api/events.php`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setEvent({ ...event, status: newStatus });
+        setIsStatusDropdownOpen(false);
+      } else {
+        setError(data.message || 'Failed to update status');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update status');
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!id || !window.confirm('Are you sure you want to delete this event?')) return;
+
+    try {
+      const response = await fetch(`http://localhost/pfe/backend/src/api/events.php?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        navigate('/events');
+      } else {
+        setError(data.message || 'Failed to delete event');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete event');
     }
   };
 
@@ -117,9 +185,32 @@ export const EventDetails = () => {
             Back to Events
           </Button>
         </Link>
-        <Badge variant={getStatusColor(event.status)}>
-          {event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : 'Unknown'}
-        </Badge>
+        <div className="relative">
+          <button
+            className={`flex items-center ${getStatusColor(event.status)}`}
+            onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+          >
+            {getStatusIcon(event.status)}
+            <span className="ml-2">
+              {event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : 'Unknown'}
+            </span>
+            <ChevronDown className="h-5 w-5 ml-2" />
+          </button>
+          {isStatusDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-10">
+              {statuses.map((status) => (
+                <button
+                  key={status}
+                  className={`block w-full text-left px-4 py-2 text-sm ${getStatusColor(status)} hover:bg-gray-100`}
+                  onClick={() => handleStatusChange(status)}
+                >
+                  {getStatusIcon(status)}
+                  <span className="ml-2">{status}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -168,11 +259,18 @@ export const EventDetails = () => {
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-3">
-                <Button variant="outline" fullWidth>
-                  Edit Event
-                </Button>
-                <Button variant="outline" fullWidth>
-                  View Budget
+                <Link to={`/transactions/`}>
+                  <Button variant="outline" fullWidth>
+                    View Requests
+                  </Button>
+                </Link>
+                <Button
+                  variant="destructive"
+                  fullWidth
+                  leftIcon={<Trash2 size={16} />}
+                  onClick={handleDeleteEvent}
+                >
+                  Delete Event
                 </Button>
               </div>
             </CardContent>

@@ -6,20 +6,24 @@ import { Input } from '../../components/ui/Input';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { formatDate } from '../../lib/utils';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Event {
   id: string;
   title: string;
   type: string;
+  id_type: number;
   date: string;
   location: string;
   description: string;
   status: string;
   expectedGuests: number;
+  budget: number;
   bannerImage?: string;
 }
 
 export const EventList = () => {
+  const { currentUser } = useAuth(); // Get currentUser from AuthContext
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,11 +31,19 @@ export const EventList = () => {
   const [filterType, setFilterType] = useState('all');
 
   useEffect(() => {
-    fetch('http://localhost/pfe/backend/src/api/events.php')
-      .then(async (res) => {
-        const text = await res.text();
+    if (!currentUser) {
+      setError('You must be logged in to view events.');
+      setLoading(false);
+      return;
+    }
+
+    // Modify the fetch URL to include the user ID
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch(`http://localhost/pfe/backend/src/api/events.php?userId=${currentUser.id}`);
+        const text = await response.text();
         console.log('Raw response:', text);
-        if (!res.ok) throw new Error('Network response was not ok');
+        if (!response.ok) throw new Error('Network response was not ok');
         try {
           const data = JSON.parse(text);
           console.log('Parsed data:', data);
@@ -45,12 +57,14 @@ export const EventList = () => {
           throw new Error('Response is not valid JSON');
         }
         setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         setError(err.message);
         setLoading(false);
-      });
-  }, []);
+      }
+    };
+
+    fetchEvents();
+  }, [currentUser]); // Add currentUser as a dependency
 
   const filteredEvents = events.filter(event => {
     const matchesSearch =
@@ -125,9 +139,9 @@ export const EventList = () => {
             <Card isPressable isHoverable className="h-full">
               <div className="h-48 relative">
                 <img
-                  src={event.bannerImage || '/default-image.jpg'} // Fallback for missing image
+                  src={event.bannerImage || '/default-image.jpg'}
                   alt={event.title}
-                  className="wフル h-full object-cover rounded-t-xl"
+                  className="w-full h-full object-cover rounded-t-xl"
                 />
                 <Badge
                   variant={getStatusColor(event.status)}
@@ -137,7 +151,7 @@ export const EventList = () => {
                 </Badge>
               </div>
               <CardContent className="p-4">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl homogenized text-gray-900 mb-2">
                   {event.title}
                 </h3>
                 <div className="space-y-2 text-sm text-gray-500">
