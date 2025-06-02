@@ -3,25 +3,21 @@ class User {
     private $conn;
     private $table_name = "client";
 
-    // User properties
     public $id;
     public $name;
     public $email;
     public $password;
     public $created_at;
 
-    // Constructor
     public function __construct($db) {
         $this->conn = $db;
     }
 
-    // Create a new user
     public function create() {
         $query = "INSERT INTO " . $this->table_name . " (name, email, password) 
                   VALUES (:name, :email, :password)";
         $stmt = $this->conn->prepare($query);
 
-        // Clean data
         $this->name = htmlspecialchars(strip_tags($this->name));
         $this->email = htmlspecialchars(strip_tags($this->email));
 
@@ -37,7 +33,6 @@ class User {
         return false;
     }
 
-    // Check if email exists
     public function emailExists() {
         $query = "SELECT id_client, name, email, password, creation_date 
                   FROM " . $this->table_name . " 
@@ -63,7 +58,6 @@ class User {
         return false;
     }
 
-    // Get user by ID
     public function getById($id) {
         $query = "SELECT id_client, name, email, creation_date 
                   FROM " . $this->table_name . " 
@@ -86,6 +80,31 @@ class User {
         }
 
         return false;
+    }
+
+    public function verifyPassword($password) {
+        $query = "SELECT password FROM " . $this->table_name . " 
+                  WHERE id_client = :id_client LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id_client", $this->id);
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0) {
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return password_verify($password, $row['password']);
+        }
+        return false;
+    }
+
+    public function updatePassword() {
+        $query = "UPDATE " . $this->table_name . " 
+                  SET password = :password 
+                  WHERE id_client = :id_client";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':password', $this->password);
+        $stmt->bindParam(':id_client', $this->id);
+
+        return $stmt->execute();
     }
 }
 ?>

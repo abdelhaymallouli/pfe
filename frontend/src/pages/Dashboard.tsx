@@ -19,22 +19,22 @@ import { toast } from 'react-hot-toast';
 interface Event {
   id: string;
   title: string;
-  event_date: string; // Changed from date
+  event_date: string; 
   location: string;
   status: string;
-  banner_image: string | null; // Changed from bannerImage
-  expected_guests: number; // Changed from expectedGuests
+  banner_image: string | null; 
+  expected_guests: number; 
   budget: number;
-  id_client: string; // Changed from user_id
+  id_client: string; 
 }
 
 interface Task {
   id: string;
   title: string;
-  deadline: string | null; // Changed from date_limite
-  status: string; // Changed from statut
+  deadline: string | null; 
+  status: string; 
   event_id: string;
-  amount: number | null; // Changed from transaction_montant
+  amount: number | null; 
   vendor_name: string | null;
 }
 interface DashboardStats {
