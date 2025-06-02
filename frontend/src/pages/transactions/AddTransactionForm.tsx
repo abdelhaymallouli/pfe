@@ -14,7 +14,7 @@ interface Event {
   id: string;
   title: string;
   budget?: number | null;
-  type_id?: number;
+  id_type: number;
 }
 
 interface Vendor {
@@ -80,65 +80,69 @@ export const AddTransactionForm = () => {
     console.log('Form state:', { eventId, vendorId, errors, isSubmitting });
   }, [eventId, vendorId, errors, isSubmitting]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Check if user is logged in
-        if (!currentUser?.id) {
-          throw new Error('You must be logged in to add a transaction.');
-        }
-
-        // Fetch events for the current user
-        const eventsResponse = await fetch(`http://localhost/pfe/backend/src/api/events.php?userId=${currentUser.id}`);
-        if (!eventsResponse.ok) {
-          const text = await eventsResponse.text();
-          console.error('Events response status:', eventsResponse.status, 'Raw response:', text);
-          throw new Error(`HTTP error while fetching events! status: ${eventsResponse.status}`);
-        }
-        const eventsData = await eventsResponse.json();
-        console.log('Events API response:', eventsData);
-        if (!eventsData.success || !Array.isArray(eventsData.data)) {
-          throw new Error(eventsData.message || 'Invalid events response');
-        }
-        setEvents(
-          eventsData.data.map((event: any) => ({
-            id: event.id,
-            title: event.title,
-            budget: event.budget,
-            type_id: event.id_type,
-          }))
-        );
-
-        // Fetch vendors
-        const vendorsResponse = await fetch('http://localhost/pfe/backend/src/api/vendor.php');
-        if (!vendorsResponse.ok) {
-          const text = await vendorsResponse.text();
-          console.error('Vendors response status:', vendorsResponse.status, 'Raw response:', text);
-          throw new Error(`HTTP error while fetching vendors! status: ${vendorsResponse.status}`);
-        }
-        const vendorsData = await vendorsResponse.json();
-        console.log('Vendors API response:', vendorsData);
-        if (!Array.isArray(vendorsData)) {
-          throw new Error('Invalid vendors response');
-        }
-        setVendors(
-          vendorsData.map((vendor: any) => ({
-            id: vendor.id,
-            name: vendor.name,
-            prices: vendor.prices,
-          }))
-        );
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error(error instanceof Error ? error.message : 'Failed to load events or vendors');
-      } finally {
-        setIsLoading(false);
+useEffect(() => {
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      // Check if user is logged in
+      if (!currentUser?.id) {
+        throw new Error('You must be logged in to add a transaction.');
       }
-    };
 
-    fetchData();
-  }, [currentUser]);
+      // Fetch events for the current user
+      const eventsResponse = await fetch(`http://localhost/pfe/backend/src/api/events.php?id_client=${currentUser.id}`);
+      if (!eventsResponse.ok) {
+        const text = await eventsResponse.text();
+        console.error('Events response status:', eventsResponse.status, 'Raw response:', text);
+        throw new Error(`HTTP error while fetching events! status: ${eventsResponse.status}`);
+      }
+      const eventsData = await eventsResponse.json();
+      console.log('Events API Response:', eventsData);
+      if (!eventsData.success || !Array.isArray(eventsData.data)) {
+        throw new Error(eventsData.message || 'Invalid events response');
+      }
+      setEvents(
+        eventsData.data.map((event: any) => ({
+          id: event.id.toString(),
+          title: event.title,
+          budget: event.budget ? parseFloat(event.budget) : null,
+          id_type: parseInt(event.id_type),
+        }))
+      );
+
+      // Fetch vendors
+      const vendorsResponse = await fetch('http://localhost/pfe/backend/src/api/vendor.php');
+      if (!vendorsResponse.ok) {
+        const text = await vendorsResponse.text();
+        console.error('Vendors response status:', vendorsResponse.status, 'Raw response:', text);
+        throw new Error(`HTTP error while fetching vendors! status: ${vendorsResponse.status}`);
+      }
+      const vendorsData = await vendorsResponse.json();
+      console.log('Vendors API response:', vendorsData);
+      // Handle both flat array and { success: true, data: [...] } formats
+      const vendorsArray = Array.isArray(vendorsData) ? vendorsData : vendorsData.success && Array.isArray(vendorsData.data) ? vendorsData.data : [];
+      if (!vendorsArray.length) {
+        throw new Error('No vendors found in response');
+      }
+      setVendors(
+        vendorsArray.map((vendor: any) => ({
+          id: vendor.id.toString(),
+          name: vendor.name,
+          prices: vendor.prices || null,
+        }))
+      );
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to load events or vendors');
+      setEvents([]);
+      setVendors([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchData();
+}, [currentUser]);
 
   useEffect(() => {
     console.log('Event ID changed:', eventId);
@@ -177,106 +181,110 @@ export const AddTransactionForm = () => {
     }
   }, [eventId, setValue]);
 
-  useEffect(() => {
-    console.log('Vendor ID or event type changed:', { vendorId, selectedEventType });
-    if (vendorId && selectedEventType && eventId) {
-      const fetchVendorPrice = async () => {
-        try {
-          const response = await fetch(`http://localhost/pfe/backend/src/api/vendor.php?id=${vendorId}`);
-          if (!response.ok) {
-            throw new Error(`HTTP error while fetching vendor! status: ${response.status}`);
+useEffect(() => {
+  console.log('Vendor ID or event type changed:', { vendorId, selectedEventType });
+  if (vendorId && selectedEventType !== null && eventId) {
+    const fetchVendorPrice = async () => {
+      try {
+        const response = await fetch(`http://localhost/pfe/backend/src/api/vendor.php?id=${vendorId}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error while fetching vendor! status: ${response.status}`);
+        }
+        const vendorData = await response.json();
+        console.log('Vendor API response:', JSON.stringify(vendorData, null, 2));
+        if (vendorData && vendorData.prices) {
+          // Parse prices string like "1:1200.00,2:600.00"
+          const pricePairs = vendorData.prices.split(',').reduce((acc: { [key: string]: number }, pair: string) => {
+            const [typeId, price] = pair.split(':');
+            acc[typeId] = parseFloat(price);
+            return acc;
+          }, {});
+          const price = pricePairs[selectedEventType.toString()] || null;
+          setVendorPrice(price);
+          setSelectedVendor({ id: vendorData.id.toString(), name: vendorData.name, prices: vendorData.prices });
+          setValue('amount', price ? price.toString() : undefined);
+          if (!price) {
+            console.warn('No price found for event type:', selectedEventType);
+            toast.error('No price found for this vendor and event type');
           }
-          const vendorData = await response.json();
-          console.log('Vendor API response:', JSON.stringify(vendorData, null, 2));
-          if (vendorData && vendorData.prices) {
-            const pricePairs: PricePair[] = vendorData.prices.split(',').map((pair: string) => {
-              const [typeId, price] = pair.split(':');
-              return { typeId, price: parseFloat(price) };
-            });
-            const price = pricePairs.find((pair) => pair.typeId === selectedEventType.toString())?.price || null;
-            setVendorPrice(price);
-            setSelectedVendor({ id: vendorData.id, name: vendorData.name, prices: vendorData.prices });
-            setValue('amount', price ? price.toString() : undefined);
-            if (!price) {
-              console.warn('No price found for event type:', selectedEventType);
-              toast.error('No price found for this vendor and event type');
-            }
-          } else {
-            setVendorPrice(null);
-            setSelectedVendor(null);
-            setValue('amount', undefined);
-            toast.error('Vendor price data not found');
-          }
-        } catch (error) {
-          console.error('Error fetching vendor price:', error);
-          toast.error(error instanceof Error ? error.message : 'Failed to load vendor price');
+        } else {
           setVendorPrice(null);
           setSelectedVendor(null);
           setValue('amount', undefined);
+          toast.error('Vendor price data not found');
         }
-      };
-      fetchVendorPrice();
-    } else {
-      setVendorPrice(null);
-      setSelectedVendor(null);
-      setValue('amount', undefined);
-    }
-  }, [vendorId, selectedEventType, eventId, setValue]);
+      } catch (error) {
+        console.error('Error fetching vendor price:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to load vendor price');
+        setVendorPrice(null);
+        setSelectedVendor(null);
+        setValue('amount', undefined);
+      }
+    };
+    fetchVendorPrice();
+  } else {
+    setVendorPrice(null);
+    setSelectedVendor(null);
+    setValue('amount', undefined);
+  }
+}, [vendorId, selectedEventType, eventId, setValue]);
+
+
 
   const onSubmit: SubmitHandler<TransactionFormValues> = async (data) => {
-    console.log('onSubmit triggered with data:', data);
-    console.log('Derived values:', { vendorPrice, selectedEventType, montant: vendorPrice ?? data.amount ?? 0 });
-    try {
-      if (!currentUser?.id) {
-        throw new Error('You must be logged in to add a transaction.');
-      }
-
-      const montant = vendorPrice ?? data.amount ?? 0;
-      if (montant <= 0) {
-        console.error('Amount validation failed:', { vendorPrice, dataAmount: data.amount });
-        toast.error('Amount must be greater than zero');
-        return;
-      }
-
-      const requestData = {
-        event_id: data.eventId,
-        titre: data.transactionName,
-        montant,
-        description: data.notes || null,
-        date_limite: data.dueDate || null,
-        statut: 'Open',
-        vendor_id: data.vendorId,
-        user_id: currentUser.id, // Add user_id to the payload
-      };
-      console.log('Sending request to requetes.php:', requestData);
-
-      const response = await fetch('http://localhost/pfe/backend/src/api/requetes.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestData),
-      });
-
-      console.log('Response status:', response.status);
-      const responseData = await response.json().catch((err) => {
-        console.error('Error parsing response JSON:', err);
-        throw new Error('Failed to parse server response');
-      });
-      console.log('API response body:', responseData);
-
-      if (!response.ok || !responseData.success) {
-        console.error('API error:', responseData);
-        throw new Error(responseData.message || 'Failed to add transaction');
-      }
-
-      toast.success('Transaction added successfully');
-      console.log('Navigating to /transactions');
-      navigate('/transactions');
-    } catch (error) {
-      console.error('Submission error:', error, { data });
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add transaction';
-      toast.error(errorMessage);
+  console.log('onSubmit triggered with data:', data);
+  console.log('Derived values:', { vendorPrice, selectedEventType, amount: vendorPrice ?? data.amount ?? 0 });
+  try {
+    if (!currentUser?.id) {
+      throw new Error('You must be logged in to add a transaction.');
     }
-  };
+
+    const amount = vendorPrice ?? data.amount ?? 0;
+    if (amount <= 0) {
+      console.error('Amount validation failed:', { vendorPrice, dataAmount: data.amount });
+      toast.error('Amount must be greater than zero');
+      return;
+    }
+
+    const requestData = {
+      id_event: data.eventId,
+      title: data.transactionName,
+      amount,
+      description: data.notes || null,
+      deadline: data.dueDate || null,
+      status: 'Open',
+      id_vendor: data.vendorId,
+      id_client: currentUser.id, // Changed from user_id to id_client
+    };
+    console.log('Sending request to requests.php:', requestData);
+
+    const response = await fetch('http://localhost/pfe/backend/src/api/requests.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestData),
+    });
+
+    console.log('Response status:', response.status);
+    const responseData = await response.json().catch((err) => {
+      console.error('Error parsing response JSON:', err);
+      throw new Error('Failed to parse server response');
+    });
+    console.log('API response body:', responseData);
+
+    if (!response.ok || !responseData.success) {
+      console.error('API error:', responseData);
+      throw new Error(responseData.message || 'Failed to add transaction');
+    }
+
+    toast.success('Transaction added successfully');
+    console.log('Navigating to /transactions');
+    navigate('/transactions');
+  } catch (error) {
+    console.error('Submission error:', error, { data });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to add transaction';
+    toast.error(errorMessage);
+  }
+};
 
   const handleFormSubmit = (e: React.FormEvent) => {
     console.log('Form submit event triggered');

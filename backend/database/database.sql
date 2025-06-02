@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 01, 2025 at 11:34 PM
+-- Generation Time: Jun 02, 2025 at 02:22 PM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.0.30
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -29,17 +29,17 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `admin` (
   `id_admin` int(11) NOT NULL,
-  `nom` varchar(100) NOT NULL,
+  `name` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
-  `mot_de_passe` varchar(255) NOT NULL,
-  `date_creation` datetime DEFAULT current_timestamp()
+  `password` varchar(255) NOT NULL,
+  `creation_date` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `admin`
 --
 
-INSERT INTO `admin` (`id_admin`, `nom`, `email`, `mot_de_passe`, `date_creation`) VALUES
+INSERT INTO `admin` (`id_admin`, `name`, `email`, `password`, `creation_date`) VALUES
 (1, 'Admin User', 'admin@venuvibe.com', '$2y$10$3tV8Qz6kXz9y7n1m2o3p4u5v6w7x8y9z0a1b2c3d4e5f6g7h8i9j0', '2025-06-01 10:47:33');
 
 -- --------------------------------------------------------
@@ -50,17 +50,17 @@ INSERT INTO `admin` (`id_admin`, `nom`, `email`, `mot_de_passe`, `date_creation`
 
 CREATE TABLE `client` (
   `id_client` int(11) NOT NULL,
-  `nom` varchar(100) NOT NULL,
+  `name` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
-  `mot_de_passe` varchar(255) NOT NULL,
-  `date_creation` datetime DEFAULT current_timestamp()
+  `password` varchar(255) NOT NULL,
+  `creation_date` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `client`
 --
 
-INSERT INTO `client` (`id_client`, `nom`, `email`, `mot_de_passe`, `date_creation`) VALUES
+INSERT INTO `client` (`id_client`, `name`, `email`, `password`, `creation_date`) VALUES
 (1, 'admin', 'yassir@gmail.com', '$2y$10$lF5yn2bDbRlZD8WoIRatReealO6Eu7u1WQU0PDNGZ1CNuFrlqYV56', '2025-05-30 18:57:21'),
 (2, 'abdelhay mallouli', 'abdelhay.mallouli.solicode@gmail.com', '$2y$10$iRnaRixiZj8JlrPvDsIYnuOeZ/eOLYJuIwYMZK4Ifp3ReduwsaQjm', '2025-06-01 21:11:34');
 
@@ -73,14 +73,14 @@ INSERT INTO `client` (`id_client`, `nom`, `email`, `mot_de_passe`, `date_creatio
 CREATE TABLE `event` (
   `id_event` int(11) NOT NULL,
   `title` varchar(100) NOT NULL,
-  `date` date NOT NULL,
-  `lieu` varchar(100) DEFAULT NULL,
-  `image_banniere` varchar(255) DEFAULT NULL,
-  `description` text DEFAULT NULL,
-  `statut` enum('Planned','Ongoing','Completed','Cancelled') DEFAULT 'Planned',
+  `event_date` date NOT NULL,
+  `location` varchar(100) DEFAULT NULL,
+  `banner_image` varchar(255) DEFAULT NULL,
+  `description` text DEFAULT '',
+  `status` enum('Planned','Ongoing','Completed','Cancelled') DEFAULT 'Planned',
   `expected_guests` int(11) DEFAULT NULL,
-  `budget` decimal(10,2) DEFAULT NULL,
-  `date_creation` datetime DEFAULT current_timestamp(),
+  `budget` decimal(12,2) DEFAULT NULL,
+  `creation_date` datetime DEFAULT current_timestamp(),
   `id_client` int(11) NOT NULL,
   `id_type` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -89,7 +89,7 @@ CREATE TABLE `event` (
 -- Dumping data for table `event`
 --
 
-INSERT INTO `event` (`id_event`, `title`, `date`, `lieu`, `image_banniere`, `description`, `statut`, `expected_guests`, `budget`, `date_creation`, `id_client`, `id_type`) VALUES
+INSERT INTO `event` (`id_event`, `title`, `event_date`, `location`, `banner_image`, `description`, `status`, `expected_guests`, `budget`, `creation_date`, `id_client`, `id_type`) VALUES
 (11, 'Summer Garden Wedding', '2025-07-15', 'Rosewood Manor, CA', 'https://images.unsplash.com/photo-1566933292668-7f9b4d4038ed?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80', 'A romantic outdoor wedding with floral decorations and live music.', 'Planned', 150, 25001.00, '2025-05-30 19:08:39', 1, 2),
 (12, '30th Birthday Bash', '2025-08-22', 'Downtown Loft, NY', 'https://images.unsplash.com/photo-1517457373958-b4bdd8b50cac?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80', 'A vibrant birthday party with DJ and rooftop views.', 'Planned', 50, 5000.00, '2025-05-30 19:08:39', 1, 2),
 (13, 'TechCorp Annual Summit', '2025-09-10', 'Convention Center, SF', 'https://images.unsplash.com/photo-1516321318427-4b1c11f8e668?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80', 'A corporate summit featuring keynote speakers and networking.', 'Planned', 300, 75000.00, '2025-05-30 19:08:39', 1, 3),
@@ -100,39 +100,39 @@ INSERT INTO `event` (`id_event`, `title`, `date`, `lieu`, `image_banniere`, `des
 (18, 'Jazz Night Concert', '2025-11-30', 'Blue Note Club, NY', 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80', 'An intimate jazz concert with renowned artists.', 'Planned', 200, 12000.00, '2025-05-30 19:08:39', 1, 4),
 (19, 'Beachside Wedding', '2025-06-30', 'Ocean Breeze Resort, FL', 'https://images.unsplash.com/photo-1515934751633-2054f0c73f42?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80', 'A beachfront wedding with sunset views.', 'Planned', 120, 22034.00, '2025-05-30 19:08:39', 1, 1),
 (20, 'Corporate Charity Gala', '2025-12-05', 'Grand Ballroom, Chicago', 'https://images.unsplash.com/photo-1515169067868-5387ec356754?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80', 'A formal gala to raise funds for local charities.', 'Planned', 250, 50000.00, '2025-05-30 19:08:39', 1, 3),
-(24, 'birthday', '2025-05-24', 'tangier', NULL, '', 'Planned', 450, 4000.00, '2025-05-30 22:37:43', 1, 3),
-(28, 'ahmed birthday ', '2025-06-07', 'tangier', NULL, '', 'Planned', 4304, 10000.00, '2025-05-31 12:37:00', 1, 1),
-(29, 'weeding', '2025-05-27', 'tangier', NULL, '', 'Planned', 240, 1000.00, '2025-05-31 13:27:20', 1, 2),
-(30, 'ahmed birghday', '2025-05-14', 'tangier', NULL, '', 'Planned', 450, 5000.00, '2025-05-31 17:15:31', 1, 1),
-(31, 'birthday ', '2025-06-04', 'tangier', NULL, '', 'Planned', 450, 4000.00, '2025-05-31 17:22:06', 1, 2),
-(32, 'happy birthday ', '2025-06-11', 'tangier', NULL, '', 'Planned', 454, 9999.00, '2025-06-01 14:30:31', 1, 2),
-(33, 'birthday ', '2025-06-12', 'tangier', NULL, '', 'Planned', 33, 4500.00, '2025-06-01 19:34:40', 1, 2),
-(34, 'adelhay', '2025-06-01', 'Snowy Pines Lodge, CO', NULL, '', 'Planned', 250, 5000.00, '2025-06-01 21:10:00', 1, 3),
-(35, 'ahmed birthday ', '2025-06-13', 'Snowy Pines Lodge, CO', NULL, '', 'Planned', 45, 1000.00, '2025-06-01 21:42:23', 2, 2),
-(36, 'abdelhay', '2025-06-29', 'tangier', NULL, '', 'Planned', 50, 4999.00, '2025-06-01 22:30:54', 2, 2);
+(24, 'Birthday', '2025-05-24', 'Tangier', NULL, '', 'Planned', 450, 4000.00, '2025-05-30 22:37:43', 1, 3),
+(28, 'Ahmed Birthday', '2025-06-07', 'Tangier', NULL, '', 'Planned', 4304, 10000.00, '2025-05-31 12:37:00', 1, 1),
+(29, 'Wedding', '2025-05-27', 'Tangier', NULL, '', 'Planned', 240, 1000.00, '2025-05-31 13:27:20', 1, 2),
+(30, 'Ahmed Birthday', '2025-05-14', 'Tangier', NULL, '', 'Planned', 450, 5000.00, '2025-05-31 17:15:31', 1, 1),
+(31, 'Birthday', '2025-06-04', 'Tangier', NULL, '', 'Planned', 450, 4000.00, '2025-05-31 17:22:06', 1, 2),
+(32, 'Happy Birthday', '2025-06-11', 'Tangier', NULL, '', 'Planned', 454, 9999.00, '2025-06-01 14:30:31', 1, 2),
+(33, 'Birthday', '2025-06-12', 'Tangier', NULL, '', 'Planned', 33, 4500.00, '2025-06-01 19:34:40', 1, 2),
+(34, 'Abdelhay', '2025-06-01', 'Snowy Pines Lodge, CO', NULL, '', 'Planned', 250, 5000.00, '2025-06-01 21:10:00', 1, 3),
+(35, 'Ahmed Birthday', '2025-06-13', 'Snowy Pines Lodge, CO', NULL, '', 'Planned', 45, 1000.00, '2025-06-01 21:42:23', 2, 2),
+(36, 'Abdelhay', '2025-06-29', 'Tangier', NULL, '', 'Planned', 50, 4999.00, '2025-06-01 22:30:54', 2, 2);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `requete`
+-- Table structure for table `request`
 --
 
-CREATE TABLE `requete` (
-  `id_requete` int(11) NOT NULL,
-  `titre` varchar(100) NOT NULL,
+CREATE TABLE `request` (
+  `id_request` int(11) NOT NULL,
+  `title` varchar(100) NOT NULL,
   `description` text DEFAULT NULL,
-  `date_limite` date DEFAULT NULL,
-  `statut` enum('Open','In Progress','Completed','Cancelled') DEFAULT 'Open',
+  `deadline` date DEFAULT NULL,
+  `status` enum('Open','In Progress','Completed','Cancelled') DEFAULT 'Open',
   `id_event` int(11) NOT NULL,
   `id_transaction` int(11) DEFAULT NULL,
-  `vendor_id` int(11) DEFAULT NULL
+  `id_vendor` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dumping data for table `requete`
+-- Dumping data for table `request`
 --
 
-INSERT INTO `requete` (`id_requete`, `titre`, `description`, `date_limite`, `statut`, `id_event`, `id_transaction`, `vendor_id`) VALUES
+INSERT INTO `request` (`id_request`, `title`, `description`, `deadline`, `status`, `id_event`, `id_transaction`, `id_vendor`) VALUES
 (10, 'Confirm details with Elite Catering', NULL, NULL, 'In Progress', 24, 33, 1),
 (11, 'Confirm details with Starlight Decor', NULL, NULL, 'Open', 24, 34, 2),
 (12, 'Confirm details with Bliss Photography', NULL, NULL, 'Open', 24, 35, 4),
@@ -152,8 +152,8 @@ INSERT INTO `requete` (`id_requete`, `titre`, `description`, `date_limite`, `sta
 (32, 'Confirm details with Elite Catering', NULL, NULL, 'Open', 11, 23, 1),
 (33, 'Confirm details with Starlight Decor', NULL, NULL, 'Open', 11, 24, 2),
 (34, 'Confirm details with Bliss Photography', NULL, NULL, 'Open', 11, 25, 4),
-(42, 'photography', NULL, NULL, 'Open', 28, 36, 3),
-(43, 'photography', NULL, NULL, 'Open', 15, 37, 4);
+(42, 'Photography', NULL, NULL, 'Open', 28, 36, 3),
+(43, 'Photography', NULL, NULL, 'Open', 15, 37, 4);
 
 -- --------------------------------------------------------
 
@@ -163,8 +163,8 @@ INSERT INTO `requete` (`id_requete`, `titre`, `description`, `date_limite`, `sta
 
 CREATE TABLE `transaction` (
   `id_transaction` int(11) NOT NULL,
-  `montant` decimal(10,2) NOT NULL,
-  `date` datetime DEFAULT current_timestamp(),
+  `amount` decimal(12,2) NOT NULL,
+  `transaction_date` datetime DEFAULT current_timestamp(),
   `id_event` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -172,7 +172,7 @@ CREATE TABLE `transaction` (
 -- Dumping data for table `transaction`
 --
 
-INSERT INTO `transaction` (`id_transaction`, `montant`, `date`, `id_event`) VALUES
+INSERT INTO `transaction` (`id_transaction`, `amount`, `transaction_date`, `id_event`) VALUES
 (4, 600.00, '2025-05-31 12:37:00', 28),
 (5, 900.00, '2025-05-31 12:37:00', 28),
 (6, 1100.00, '2025-05-31 12:37:00', 28),
@@ -181,7 +181,7 @@ INSERT INTO `transaction` (`id_transaction`, `montant`, `date`, `id_event`) VALU
 (9, 1500.00, '2025-05-31 17:15:31', 30),
 (10, 1000.00, '2025-05-31 17:15:31', 30),
 (11, 1200.00, '2025-05-31 17:15:31', 30),
-(12, 800.00, '2025-05-31 17:15:31', 30),
+(12, 800.00, '2025-05-31 17:15:00', 30),
 (13, 2500.00, '2025-05-31 17:15:31', 30),
 (14, 600.00, '2025-05-31 17:15:31', 30),
 (15, 1100.00, '2025-05-31 17:15:31', 30),
@@ -203,18 +203,18 @@ INSERT INTO `transaction` (`id_transaction`, `montant`, `date`, `id_event`) VALU
 
 CREATE TABLE `type` (
   `id_type` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL
+  `type_name` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `type`
 --
 
-INSERT INTO `type` (`id_type`, `name`) VALUES
-(1, 'Wedding'),
+INSERT INTO `type` (`id_type`, `type_name`) VALUES
 (2, 'Birthday'),
+(4, 'Concert'),
 (3, 'Corporate'),
-(4, 'Concert');
+(1, 'Wedding');
 
 -- --------------------------------------------------------
 
@@ -224,41 +224,41 @@ INSERT INTO `type` (`id_type`, `name`) VALUES
 
 CREATE TABLE `vendor` (
   `id_vendor` int(11) NOT NULL,
-  `nom` varchar(100) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `category` varchar(100) DEFAULT NULL,
   `description` text DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `email` varchar(100) NOT NULL,
   `image` varchar(255) DEFAULT NULL,
-  `note` decimal(3,2) DEFAULT NULL,
-  `date_creation` datetime DEFAULT current_timestamp()
+  `rating` decimal(3,2) DEFAULT NULL,
+  `creation_date` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `vendor`
 --
 
-INSERT INTO `vendor` (`id_vendor`, `nom`, `description`, `phone`, `email`, `image`, `note`, `date_creation`) VALUES
-(1, 'Elite Catering', 'Premium catering services for all events', '555-0101', 'contact@elitecatering.com', 'https://cdn.pixabay.com/photo/2016/03/27/18/53/drinks-1283608_1280.jpg', 4.80, '2025-05-30 19:33:39'),
-(2, 'Starlight Decor', 'Elegant decor solutions for memorable events', '555-0102', 'info@starlightdecor.com', 'https://cdn.pixabay.com/photo/2021/11/22/18/29/laser-show-6817130_1280.jpg', 4.60, '2025-05-30 19:33:39'),
-(3, 'Harmony Music', 'Live music and DJ services', '555-0103', 'bookings@harmonymusic.com', 'https://cdn.pixabay.com/photo/2020/11/27/07/32/choir-5781096_1280.jpg', 4.70, '2025-05-30 19:33:39'),
-(4, 'Bliss Photography', 'Professional event photography', '555-0104', 'hello@blissphoto.com', 'https://www.weddedblissphotography.com/wp-content/uploads/2014/04/27-12610-pp_gallery/Vernon-Wedding-Photographer-Wedded-Bliss-Photography-www.weddedblissphotography.com-0160(pp_w799_h533).jpg', 4.90, '2025-05-30 19:33:39'),
-(5, 'Golden Venue', 'Luxury venue rentals', '555-0105', 'reservations@goldenvenue.com', 'https://cdn0.weddingwire.com/vendor/118851/3_2/960/jpg/a-4_51_2158811-169774370863218.webp', 4.50, '2025-05-30 19:33:39'),
-(6, 'Tasty Treats', 'Custom cakes and desserts', '555-0106', 'orders@tastytreats.com', 'https://www.somewhatsimple.com/wp-content/uploads/2018/05/cake_mix_cookies_10.jpg', 4.70, '2025-05-30 19:33:39'),
-(7, 'Bright Lights', 'Event lighting specialists', '555-0107', 'info@brightlights.com', 'https://upload.wikimedia.org/wikipedia/en/6/6b/CeeLo-BrightLightsBiggerCity.jpg', 4.60, '2025-05-30 19:33:39'),
-(8, 'Pure Elegance', 'Floral arrangements and designs', '555-0108', 'contact@pureelegance.com', 'https://res.cloudinary.com/ufn/image/upload/c_pad,f_auto,q_auto,fl_progressive,dpr_1.5,w_241,h_270/1622836145948_6.jpg', 4.80, '2025-05-30 19:33:39'),
-(9, 'Vibe Entertainment', 'Interactive entertainment services', '555-0109', 'events@vibeent.com', 'https://cdn0.weddingwire.com/vendor/173800/3_2/960/jpg/1528347552-3b05eb7edc12bad2-1528347551-1383ba5375745fcd-1528347551397-1-Vibe_Entertainment.jpeg', 4.50, '2025-05-30 19:33:39'),
-(10, 'Crystal Events', 'Full-service event planning', '555-0110', 'plan@crystalevents.com', 'https://crystalfes.com/media/pages/galerie/6f2c89c5a3-1702416790/salle-fetes-fes-600x450-crop.jpg', 4.90, '2025-05-30 19:33:39'),
-(11, 'Gourmet Bites', 'Gourmet food catering', '555-0111', 'info@gourmetbites.com', 'https://static.wixstatic.com/media/d425e0_f3d99e7b721445739657d9a26abd6b4b~mv2.jpg/v1/fill/w_742,h_496,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d425e0_f3d99e7b721445739657d9a26abd6b4b~mv2.jpg', 4.70, '2025-05-30 19:33:39'),
-(12, 'Skyline Rentals', 'Furniture and equipment rentals', '555-0112', 'rentals@skylinerentals.com', 'https://images.squarespace-cdn.com/content/v1/5f85d73f24a4090c6e56e9fd/2a1daf2f-d05b-48da-aeb0-6435d05035f6/IMG_1312.jpg', 4.60, '2025-05-30 19:33:39'),
-(13, 'Moments Captured', 'Videography and drone services', '555-0113', 'book@momentscaptured.com', 'https://2bridges.b-cdn.net/wp-content/uploads/2019/08/candidphotography-1.jpg', 4.80, '2025-05-30 19:33:39'),
-(14, 'Festive Planners', 'Creative event coordination', '555-0114', 'contact@festiveplanners.com', 'https://shop.christmasphere.com/cdn/shop/products/il_fullxfull.3488991509_a5l2.jpg?v=1668626789&width=1946', 4.70, '2025-05-30 19:33:39'),
-(15, 'Luxe Transport', 'Luxury transportation services', '555-0115', 'book@luxetransport.com', 'https://www.infinity-luxe-chauffeur.com/wp-content/uploads/2024/02/autocar-location-infinity-luxe-1024x576.png', 4.60, '2025-05-30 19:33:39'),
-(16, 'Chic Designs', 'Custom event styling', '555-0116', 'design@chicdesigns.com', 'https://www.reveriesocial.com/wp-content/uploads/2024/01/Bold-Color-Maximalist.webp', 4.80, '2025-05-30 19:33:39'),
-(17, 'Melody Bands', 'Live bands for all occasions', '555-0117', 'info@melodybands.com', 'https://cdn.alivenetwork.com/images/extrabandpics/av5.jpg', 4.70, '2025-05-30 19:33:39'),
-(18, 'Sparkle Events', 'Event decor and props', '555-0118', 'events@sparkleevents.com', 'https://projectparty.com.au/wp-content/uploads/2021/09/sparkling-events-party-hire-1st-1024x767.jpeg', 4.60, '2025-05-30 19:33:39'),
-(19, 'Tasteful Menus', 'Customized catering services', '555-0119', 'orders@tastefulmenus.com', 'https://blog.lisi.menu/wp-content/uploads/2023/05/17.-Menu-17-1-1024x683.jpg', 4.80, '2025-05-30 19:33:39'),
-(20, 'Dream Stages', 'Stage and sound system rentals', '555-0120', 'rentals@dreamstages.com', 'https://theoneupgroup.com/wp-content/uploads/2023/06/Stage-Platform.jpg', 4.70, '2025-05-30 19:33:39'),
-(21, '', NULL, NULL, '', NULL, NULL, '2025-06-01 11:18:48');
+INSERT INTO `vendor` (`id_vendor`, `name`, `category`, `description`, `phone`, `email`, `image`, `rating`, `creation_date`) VALUES
+(1, 'Elite Catering', 'Catering', 'Premium catering services for all events', '555-0101', 'contact@elitecatering.com', 'https://cdn.pixabay.com/photo/2016/03/27/18/53/drinks-1283608_1280.jpg', 4.80, '2025-05-30 19:33:39'),
+(2, 'Starlight Decor', 'Decoration', 'Elegant decor solutions for memorable events', '555-0102', 'info@starlightdecor.com', 'https://cdn.pixabay.com/photo/2021/11/22/18/29/laser-show-6817130_1280.jpg', 4.60, '2025-05-30 19:33:39'),
+(3, 'Harmony Music', 'Music', 'Live music and DJ services', '555-0103', 'bookings@harmonymusic.com', 'https://cdn.pixabay.com/photo/2020/11/27/07/32/choir-5781096_1280.jpg', 4.70, '2025-05-30 19:33:39'),
+(4, 'Bliss Photography', 'Photography', 'Professional event photography', '555-0104', 'hello@blissphoto.com', 'https://www.weddedblissphotography.com/wp-content/uploads/2014/04/27-12610-pp_gallery/Vernon-Wedding-Photographer-Wedded-Bliss-Photography-www.weddedblissphotography.com-0160(pp_w799_h533).jpg', 4.90, '2025-05-30 19:33:39'),
+(5, 'Golden Venue', 'Venue', 'Luxury venue rentals', '555-0105', 'reservations@goldenvenue.com', 'https://cdn0.weddingwire.com/vendor/118851/3_2/960/jpg/a-4_51_2158811-169774370863218.webp', 4.50, '2025-05-30 19:33:39'),
+(6, 'Tasty Treats', 'Catering', 'Custom cakes and desserts', '555-0106', 'orders@tastytreats.com', 'https://www.somewhatsimple.com/wp-content/uploads/2018/05/cake_mix_cookies_10.jpg', 4.70, '2025-05-30 19:33:39'),
+(7, 'Bright Lights', 'Lighting', 'Event lighting specialists', '555-0107', 'info@brightlights.com', 'https://upload.wikimedia.org/wikipedia/en/6/6b/CeeLo-BrightLightsBiggerCity.jpg', 4.60, '2025-05-30 19:33:39'),
+(8, 'Pure Elegance', 'Floral', 'Floral arrangements and designs', '555-0108', 'contact@pureelegance.com', 'https://res.cloudinary.com/ufn/image/upload/c_pad,f_auto,q_auto,fl_progressive,dpr_1.5,w_241,h_270/1622836145948_6.jpg', 4.80, '2025-05-30 19:33:39'),
+(9, 'Vibe Entertainment', 'Entertainment', 'Interactive entertainment services', '555-0109', 'events@vibeent.com', 'https://cdn0.weddingwire.com/vendor/173800/3_2/960/jpg/1528347552-3b05eb7edc12bad2-1528347551-1383ba5375745fcd-1528347551397-1-Vibe_Entertainment.jpeg', 4.50, '2025-05-30 19:33:39'),
+(10, 'Crystal Events', 'Event Planning', 'Full-service event planning', '555-0110', 'plan@crystalevents.com', 'https://crystalfes.com/media/pages/galerie/6f2c89c5a3-1702416790/salle-fetes-fes-600x450-crop.jpg', 4.90, '2025-05-30 19:33:39'),
+(11, 'Gourmet Bites', 'Catering', 'Gourmet food catering', '555-0111', 'info@gourmetbites.com', 'https://static.wixstatic.com/media/d425e0_f3d99e7b721445739657d9a26abd6b4b~mv2.jpg/v1/fill/w_742,h_496,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d425e0_f3d99e7b721445739657d9a26abd6b4b~mv2.jpg', 4.70, '2025-05-30 19:33:39'),
+(12, 'Skyline Rentals', 'Rentals', 'Furniture and equipment rentals', '555-0112', 'rentals@skylinerentals.com', 'https://images.squarespace-cdn.com/content/v1/5f85d73f24a4090c6e56e9fd/2a1daf2f-d05b-48da-aeb0-6435d05035f6/IMG_1312.jpg', 4.60, '2025-05-30 19:33:39'),
+(13, 'Moments Captured', 'Videography', 'Videography and drone services', '555-0113', 'book@momentscaptured.com', 'https://2bridges.b-cdn.net/wp-content/uploads/2019/08/candidphotography-1.jpg', 4.80, '2025-05-30 19:33:39'),
+(14, 'Festive Planners', 'Event Planning', 'Creative event coordination', '555-0114', 'contact@festiveplanners.com', 'https://shop.christmasphere.com/cdn/shop/products/il_fullxfull.3488991509_a5l2.jpg?v=1668626789&width=1946', 4.70, '2025-05-30 19:33:39'),
+(15, 'Luxe Transport', 'Transportation', 'Luxury transportation services', '555-0115', 'book@luxetransport.com', 'https://www.infinity-luxe-chauffeur.com/wp-content/uploads/2024/02/autocar-location-infinity-luxe-1024x576.png', 4.60, '2025-05-30 19:33:39'),
+(16, 'Chic Designs', 'Styling', 'Custom event styling', '555-0116', 'design@chicdesigns.com', 'https://www.reveriesocial.com/wp-content/uploads/2024/01/Bold-Color-Maximalist.webp', 4.80, '2025-05-30 19:33:39'),
+(17, 'Melody Bands', 'Music', 'Live bands for all occasions', '555-0117', 'info@melodybands.com', 'https://cdn.alivenetwork.com/images/extrabandpics/av5.jpg', 4.70, '2025-05-30 19:33:39'),
+(18, 'Sparkle Events', 'Decoration', 'Event decor and props', '555-0118', 'events@sparkleevents.com', 'https://projectparty.com.au/wp-content/uploads/2021/09/sparkling-events-party-hire-1st-1024x767.jpeg', 4.60, '2025-05-30 19:33:39'),
+(19, 'Tasteful Menus', 'Catering', 'Customized catering services', '555-0119', 'orders@tastefulmenus.com', 'https://blog.lisi.menu/wp-content/uploads/2023/05/17.-Menu-17-1-1024x683.jpg', 4.80, '2025-05-30 19:33:39'),
+(20, 'Dream Stages', 'Stage and Sound', 'Stage and sound system rentals', '555-0120', 'rentals@dreamstages.com', 'https://theoneupgroup.com/wp-content/uploads/2023/06/Stage-Platform.jpg', 4.70, '2025-05-30 19:33:39');
 
 -- --------------------------------------------------------
 
@@ -269,7 +269,7 @@ INSERT INTO `vendor` (`id_vendor`, `nom`, `description`, `phone`, `email`, `imag
 CREATE TABLE `vendor_type` (
   `id_vendor` int(11) NOT NULL,
   `id_type` int(11) NOT NULL,
-  `price` decimal(10,2) NOT NULL
+  `price` decimal(12,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -382,35 +382,39 @@ ALTER TABLE `client`
 ALTER TABLE `event`
   ADD PRIMARY KEY (`id_event`),
   ADD KEY `id_client` (`id_client`),
-  ADD KEY `id_type` (`id_type`);
+  ADD KEY `id_type` (`id_type`),
+  ADD KEY `event_date` (`event_date`);
 
 --
--- Indexes for table `requete`
+-- Indexes for table `request`
 --
-ALTER TABLE `requete`
-  ADD PRIMARY KEY (`id_requete`),
+ALTER TABLE `request`
+  ADD PRIMARY KEY (`id_request`),
   ADD KEY `id_event` (`id_event`),
-  ADD KEY `requete_ibfk_2` (`id_transaction`),
-  ADD KEY `requete_ibfk_3` (`vendor_id`);
+  ADD KEY `id_transaction` (`id_transaction`),
+  ADD KEY `id_vendor` (`id_vendor`);
 
 --
 -- Indexes for table `transaction`
 --
 ALTER TABLE `transaction`
   ADD PRIMARY KEY (`id_transaction`),
-  ADD KEY `id_event` (`id_event`);
+  ADD KEY `id_event` (`id_event`),
+  ADD KEY `transaction_date` (`transaction_date`);
 
 --
 -- Indexes for table `type`
 --
 ALTER TABLE `type`
-  ADD PRIMARY KEY (`id_type`);
+  ADD PRIMARY KEY (`id_type`),
+  ADD UNIQUE KEY `type_name` (`type_name`);
 
 --
 -- Indexes for table `vendor`
 --
 ALTER TABLE `vendor`
-  ADD PRIMARY KEY (`id_vendor`);
+  ADD PRIMARY KEY (`id_vendor`),
+  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indexes for table `vendor_type`
@@ -442,10 +446,10 @@ ALTER TABLE `event`
   MODIFY `id_event` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
--- AUTO_INCREMENT for table `requete`
+-- AUTO_INCREMENT for table `request`
 --
-ALTER TABLE `requete`
-  MODIFY `id_requete` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+ALTER TABLE `request`
+  MODIFY `id_request` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT for table `transaction`
@@ -463,7 +467,7 @@ ALTER TABLE `type`
 -- AUTO_INCREMENT for table `vendor`
 --
 ALTER TABLE `vendor`
-  MODIFY `id_vendor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id_vendor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- Constraints for dumped tables
@@ -474,15 +478,15 @@ ALTER TABLE `vendor`
 --
 ALTER TABLE `event`
   ADD CONSTRAINT `event_ibfk_1` FOREIGN KEY (`id_client`) REFERENCES `client` (`id_client`) ON DELETE CASCADE,
-  ADD CONSTRAINT `event_ibfk_2` FOREIGN KEY (`id_type`) REFERENCES `type` (`id_type`);
+  ADD CONSTRAINT `event_ibfk_2` FOREIGN KEY (`id_type`) REFERENCES `type` (`id_type`) ON DELETE CASCADE;
 
 --
--- Constraints for table `requete`
+-- Constraints for table `request`
 --
-ALTER TABLE `requete`
-  ADD CONSTRAINT `requete_ibfk_1` FOREIGN KEY (`id_event`) REFERENCES `event` (`id_event`) ON DELETE CASCADE,
-  ADD CONSTRAINT `requete_ibfk_2` FOREIGN KEY (`id_transaction`) REFERENCES `transaction` (`id_transaction`) ON DELETE SET NULL,
-  ADD CONSTRAINT `requete_ibfk_3` FOREIGN KEY (`vendor_id`) REFERENCES `vendor` (`id_vendor`) ON DELETE SET NULL;
+ALTER TABLE `request`
+  ADD CONSTRAINT `request_ibfk_1` FOREIGN KEY (`id_event`) REFERENCES `event` (`id_event`) ON DELETE CASCADE,
+  ADD CONSTRAINT `request_ibfk_2` FOREIGN KEY (`id_transaction`) REFERENCES `transaction` (`id_transaction`) ON DELETE SET NULL,
+  ADD CONSTRAINT `request_ibfk_3` FOREIGN KEY (`id_vendor`) REFERENCES `vendor` (`id_vendor`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `transaction`

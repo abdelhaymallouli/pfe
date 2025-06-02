@@ -6,15 +6,17 @@ import { Button } from '../../components/ui/Button';
 import { formatDate } from '../../lib/utils';
 
 interface Event {
-  id?: string;
-  title?: string;
-  type?: string;
-  date?: string;
-  location?: string;
-  description?: string;
-  status?: string;
-  expectedGuests?: number;
-  bannerImage?: string;
+  id: number;
+  id_client: number;
+  title: string;
+  type: string;
+  id_type: number;
+  event_date: string;
+  location: string;
+  description: string;
+  status: 'Planned'| 'Ongoing'| 'Completed' | 'Cancelled'; 
+  expected_guests: number;
+  banner_image?: string; 
 }
 
 export const EventDetails = () => {
@@ -25,57 +27,58 @@ export const EventDetails = () => {
   const [error, setError] = useState<string | null>(null);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
-  const statuses = ['Planned', 'Ongoing', 'Completed', 'Cancelled'];
+const statuses: ('Planned' | 'Ongoing' | 'Completed' | 'Cancelled')[] = ['Planned', 'Ongoing', 'Completed', 'Cancelled'];
 
   useEffect(() => {
-    const fetchEvent = async () => {
-      if (!id) {
-        setError('Event ID is missing');
-        setLoading(false);
-        return;
+  const fetchEvent = async () => {
+    if (!id || isNaN(Number(id))) {
+      setError('Invalid Event ID');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`http://localhost/pfe/backend/src/api/events.php?id=${encodeURIComponent(id)}`);
+      const text = await response.text();
+      console.log('Raw response:', text);
+
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status}`);
       }
 
-      setLoading(true);
-      setError(null);
+      let data;
       try {
-        const response = await fetch(`http://localhost/pfe/backend/src/api/events.php?id=${encodeURIComponent(id)}`);
-        const text = await response.text();
-        console.log('Raw response:', text);
-
-        if (!response.ok) {
-          throw new Error(`Network response was not ok: ${response.status}`);
-        }
-
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (err) {
-          throw new Error('Response is not valid JSON');
-        }
-
-        console.log('Parsed data:', data);
-
-        if (data.success && data.data) {
-          if (Array.isArray(data.data)) {
-            const foundEvent = data.data.find((e: Event) => e.id === id);
-            if (!foundEvent) throw new Error('Event not found');
-            setEvent(foundEvent);
-          } else {
-            setEvent(data.data);
-          }
-        } else {
-          throw new Error('Invalid response structure');
-        }
+        data = JSON.parse(text);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch event');
-        setEvent(null);
-      } finally {
-        setLoading(false);
+        throw new Error('Response is not valid JSON');
       }
-    };
 
-    fetchEvent();
-  }, [id]);
+      console.log('Parsed data:', data);
+
+      if (data.success && data.data) {
+        setEvent({
+          ...data.data,
+          id: Number(data.data.id), // Ensure id is a number
+          id_client: Number(data.data.id_client),
+          id_type: Number(data.data.id_type),
+          expected_guests: Number(data.data.expected_guests),
+          budget: Number(data.data.budget)
+        });
+      } else {
+        throw new Error('Invalid response structure');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch event');
+      setEvent(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchEvent();
+}, [id]);
 
   const getStatusColor = (status?: string) => {
     switch (status?.toLowerCase()) {
@@ -218,14 +221,14 @@ export const EventDetails = () => {
         <div className="lg:col-span-2">
           <Card>
             <div className="h-64 sm:h-96 relative">
-              <img
-                src={event.bannerImage || 'https://via.placeholder.com/800x400?text=No+Image'}
-                alt={event.title || 'Event'}
-                className="w-full h-full object-cover rounded-t-xl"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://via.placeholder.com/800x400?text=No+Image';
-                }}
-              />
+            <img
+              src={event.banner_image || 'https://via.placeholder.com/800x400?text=No+Image'}
+              alt={event.title || 'Event'}
+              className="w-full h-full object-cover rounded-t-xl"
+              onError={(e) => {
+                e.currentTarget.src = 'https://via.placeholder.com/800x400?text=No+Image';
+              }}
+            />
             </div>
             <CardContent className="p-6">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{event.title || 'Untitled Event'}</h1>
@@ -233,7 +236,7 @@ export const EventDetails = () => {
               <div className="space-y-4 mb-6">
                 <div className="flex items-center text-gray-600">
                   <Calendar className="h-5 w-5 mr-2" />
-                  <span>{event.date ? formatDate(event.date) : 'No date'}</span>
+                  <span>{event.event_date ? formatDate(event.event_date) : 'No date'}</span>
                 </div>
                 <div className="flex items-center text-gray-600">
                   <MapPin className="h-5 w-5 mr-2" />
@@ -241,7 +244,7 @@ export const EventDetails = () => {
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Users className="h-5 w-5 mr-2" />
-                  <span>{event.expectedGuests ?? 0} guests</span>
+                  <span>{event.expected_guests ?? 0} guests</span>
                 </div>
               </div>
 
@@ -288,7 +291,7 @@ export const EventDetails = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Date & Time</h3>
-                  <p className="mt-1 text-gray-900">{event.date ? formatDate(event.date) : 'No date'}</p>
+                  <p className="mt-1 text-gray-900">{event.event_date ? formatDate(event.event_date) : 'No date'}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Location</h3>
@@ -296,7 +299,7 @@ export const EventDetails = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Guest Count</h3>
-                  <p className="mt-1 text-gray-900">{event.expectedGuests ?? 0} people</p>
+                  <p className="mt-1 text-gray-900">{event.expected_guests ?? 0} people</p>
                 </div>
               </div>
             </CardContent>

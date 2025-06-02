@@ -18,11 +18,11 @@ class EventController {
         }
     }
 
-    public function getEventsByUserId(int $userId) {
+    public function getEventsByClientId(int $id_client) {
         try {
-            return $this->model->getEventsByUserId($userId);
+            return $this->model->getEventsByClientId($id_client);
         } catch (Exception $e) {
-            error_log("Error getting events for user ID $userId: " . $e->getMessage());
+            error_log("Error getting events for client ID $id_client: " . $e->getMessage());
             return [];
         }
     }
@@ -45,24 +45,18 @@ class EventController {
         try {
             error_log("EventController::addEvent received data: " . json_encode($data));
 
-            $required = ['user_id', 'title', 'type_id', 'date', 'location', 'expected_guests'];
+            $required = ['id_client', 'title', 'id_type', 'event_date', 'location', 'expected_guests'];
             foreach ($required as $field) {
                 if (!isset($data[$field]) || (is_string($data[$field]) && empty(trim($data[$field])))) {
                     throw new Exception("Field '$field' is required");
                 }
             }
 
-            $data['description'] = $data['description'] ?? '';
-            $data['image_banniere'] = $data['image_banniere'] ?? '';
-            $data['budget'] = $data['budget'] ?? 0;
-            $data['status'] = $data['status'] ?? 'Planned';
-            $data['expected_guests'] = (int)$data['expected_guests'];
-
-            if (!is_numeric($data['user_id'])) {
-                throw new Exception('user_id must be numeric');
+            if (!is_numeric($data['id_client'])) {
+                throw new Exception('id_client must be numeric');
             }
-            if (!is_numeric($data['type_id'])) {
-                throw new Exception('type_id must be numeric');
+            if (!is_numeric($data['id_type'])) {
+                throw new Exception('id_type must be numeric');
             }
             if (!is_numeric($data['expected_guests'])) {
                 throw new Exception('expected_guests must be numeric');
@@ -70,23 +64,32 @@ class EventController {
             if (isset($data['budget']) && !is_numeric($data['budget'])) {
                 throw new Exception('budget must be numeric');
             }
+            if (isset($data['status']) && !in_array($data['status'], ['Planned', 'Ongoing', 'Completed', 'Cancelled'])) {
+                throw new Exception('Invalid status value');
+            }
 
-            if (isset($data['requetes']) && is_array($data['requetes'])) {
-                foreach ($data['requetes'] as $requete) {
-                    if (!isset($requete['titre']) || empty(trim($requete['titre']))) {
-                        throw new Exception("Requete title is required");
+            // Validate requests if provided
+            if (isset($data['requests']) && is_array($data['requests'])) {
+                foreach ($data['requests'] as $request) {
+                    if (!isset($request['title']) || empty(trim($request['title']))) {
+                        throw new Exception("Request title is required");
                     }
-                    if (!isset($requete['montant']) || !is_numeric($requete['montant']) || $requete['montant'] <= 0) {
-                        throw new Exception("Requete amount must be a positive number");
+                    if (isset($request['amount']) && (!is_numeric($request['amount']) || $request['amount'] <= 0)) {
+                        throw new Exception("Request amount must be a positive number");
                     }
-                    if (isset($requete['vendor_id']) && !is_numeric($requete['vendor_id'])) {
-                        throw new Exception("Requete vendor_id must be numeric");
+                    if (isset($request['id_vendor']) && !is_numeric($request['id_vendor'])) {
+                        throw new Exception("Request id_vendor must be numeric");
+                    }
+                    if (isset($request['deadline']) && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $request['deadline']) || !strtotime($request['deadline']))) {
+                        throw new Exception("Invalid request deadline format, expected YYYY-MM-DD");
+                    }
+                    if (isset($request['status']) && !in_array($request['status'], ['Open', 'In Progress', 'Completed', 'Cancelled'])) {
+                        throw new Exception("Invalid request status value");
                     }
                 }
             }
 
             $eventId = $this->model->createEvent($data);
-
             if (!$eventId) {
                 throw new Exception('Failed to create event - no ID returned');
             }
@@ -129,21 +132,30 @@ class EventController {
             }
 
             $updateData = array_merge($existingEvent, $data);
-            $updateData['image_banniere'] = $data['image_banniere'] ?? $existingEvent['bannerImage'] ?? null;
+            $updateData['banner_image'] = $data['banner_image'] ?? $existingEvent['banner_image'] ?? null;
             $updateData['status'] = in_array($data['status'] ?? $existingEvent['status'], ['Planned', 'Ongoing', 'Completed', 'Cancelled'])
                 ? ($data['status'] ?? $existingEvent['status'])
                 : 'Planned';
 
-            if (isset($data['requetes']) && is_array($data['requetes'])) {
-                foreach ($data['requetes'] as $requete) {
-                    if (!isset($requete['id_requete']) || !is_numeric($requete['id_requete'])) {
-                        throw new Exception("Requete ID is required and must be numeric");
+            if (isset($data['requests']) && is_array($data['requests'])) {
+                foreach ($data['requests'] as $request) {
+                    if (!isset($request['id_request']) || !is_numeric($request['id_request'])) {
+                        throw new Exception("Request ID is required and must be numeric");
                     }
-                    if (!isset($requete['titre']) || empty(trim($requete['titre']))) {
-                        throw new Exception("Requete title is required");
+                    if (!isset($request['title']) || empty(trim($request['title']))) {
+                        throw new Exception("Request title is required");
                     }
-                    if (isset($requete['vendor_id']) && !is_numeric($requete['vendor_id'])) {
-                        throw new Exception("Requete vendor_id must be numeric");
+                    if (isset($request['amount']) && (!is_numeric($request['amount']) || $request['amount'] <= 0)) {
+                        throw new Exception("Request amount must be a positive number");
+                    }
+                    if (isset($request['id_vendor']) && !is_numeric($request['id_vendor'])) {
+                        throw new Exception("Request id_vendor must be numeric");
+                    }
+                    if (isset($request['deadline']) && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $request['deadline']) || !strtotime($request['deadline']))) {
+                        throw new Exception("Invalid request deadline format, expected YYYY-MM-DD");
+                    }
+                    if (isset($request['status']) && !in_array($request['status'], ['Open', 'In Progress', 'Completed', 'Cancelled'])) {
+                        throw new Exception("Invalid request status value");
                     }
                 }
             }
@@ -172,4 +184,3 @@ class EventController {
         }
     }
 }
-?>

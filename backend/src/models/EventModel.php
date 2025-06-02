@@ -10,9 +10,8 @@ class EventModel {
 
     public function getAllEvents() {
         try {
-            $sql = "SELECT e.id_event AS id, e.id_client AS user_id, e.title, t.name AS type, e.id_type AS id_type, e.date, e.lieu AS location, 
-                           e.image_banniere AS bannerImage, e.description, e.expected_guests AS expectedGuests, 
-                           e.budget, e.statut AS status 
+            $sql = "SELECT e.id_event AS id, e.id_client, e.title, t.type_name AS type, e.id_type, e.event_date, e.location, 
+                           e.banner_image, e.description, e.expected_guests, e.budget, e.status 
                     FROM {$this->table} e 
                     JOIN type t ON e.id_type = t.id_type";
             $stmt = $this->pdo->prepare($sql);
@@ -25,29 +24,27 @@ class EventModel {
         }
     }
 
-    public function getEventsByUserId(int $userId) {
+    public function getEventsByClientId(int $id_client) {
         try {
-            $sql = "SELECT e.id_event AS id, e.id_client AS user_id, e.title, t.name AS type, e.id_type AS id_type, e.date, e.lieu AS location, 
-                           e.image_banniere AS bannerImage, e.description, e.expected_guests AS expectedGuests, 
-                           e.budget, e.statut AS status 
+            $sql = "SELECT e.id_event AS id, e.id_client, e.title, t.type_name AS type, e.id_type, e.event_date, e.location, 
+                           e.banner_image, e.description, e.expected_guests, e.budget, e.status 
                     FROM {$this->table} e 
                     JOIN type t ON e.id_type = t.id_type 
                     WHERE e.id_client = ?";
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([$userId]);
+            $stmt->execute([$id_client]);
             $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
             return $events;
         } catch (Exception $e) {
-            error_log("EventModel::getEventsByUserId failed for user ID $userId: " . $e->getMessage());
+            error_log("EventModel::getEventsByClientId failed for client ID $id_client: " . $e->getMessage());
             throw $e;
         }
     }
 
     public function getEventById(int $id) {
         try {
-            $sql = "SELECT e.id_event AS id, e.id_client AS user_id, e.title, t.name AS type, e.id_type AS id_type, e.date, e.lieu AS location, 
-                           e.image_banniere AS bannerImage, e.description, e.expected_guests AS expectedGuests, 
-                           e.budget, e.statut AS status 
+            $sql = "SELECT e.id_event AS id, e.id_client, e.title, t.type_name AS type, e.id_type, e.event_date, e.location, 
+                           e.banner_image, e.description, e.expected_guests, e.budget, e.status 
                     FROM {$this->table} e 
                     JOIN type t ON e.id_type = t.id_type 
                     WHERE e.id_event = ?";
@@ -65,34 +62,34 @@ class EventModel {
         try {
             $this->pdo->beginTransaction();
 
-            $required = ['user_id', 'title', 'type_id', 'date', 'location', 'expected_guests'];
+            $required = ['id_client', 'title', 'id_type', 'event_date', 'location', 'expected_guests'];
             foreach ($required as $field) {
                 if (!isset($data[$field]) || (is_string($data[$field]) && empty(trim($data[$field])))) {
                     throw new Exception("Missing or empty required field: $field");
                 }
             }
 
-            $bannerImage = isset($data['image_banniere']) && !empty($data['image_banniere'])
-                ? $data['image_banniere']
+            $banner_image = isset($data['banner_image']) && !empty($data['banner_image'])
+                ? $data['banner_image']
                 : null;
 
-            $expectedGuests = (int)($data['expected_guests'] ?? 0);
+            $expected_guests = (int)($data['expected_guests'] ?? 0);
             $budget = (float)($data['budget'] ?? 0);
 
-            $sql = "INSERT INTO {$this->table} (id_client, title, id_type, date, lieu, image_banniere, description, expected_guests, budget, statut) 
-                    VALUES (:id_client, :title, :id_type, :date, :lieu, :image_banniere, :description, :expected_guests, :budget, :statut)";
+            $sql = "INSERT INTO {$this->table} (id_client, title, id_type, event_date, location, banner_image, description, expected_guests, budget, status) 
+                    VALUES (:id_client, :title, :id_type, :event_date, :location, :banner_image, :description, :expected_guests, :budget, :status)";
             $stmt = $this->pdo->prepare($sql);
             $result = $stmt->execute([
-                ':id_client' => (int)$data['user_id'],
+                ':id_client' => (int)$data['id_client'],
                 ':title' => $data['title'],
-                ':id_type' => (int)$data['type_id'],
-                ':date' => $data['date'],
-                ':lieu' => $data['location'],
-                ':image_banniere' => $bannerImage,
+                ':id_type' => (int)$data['id_type'],
+                ':event_date' => $data['event_date'],
+                ':location' => $data['location'],
+                ':banner_image' => $banner_image,
                 ':description' => $data['description'] ?? '',
-                ':expected_guests' => $expectedGuests,
+                ':expected_guests' => $expected_guests,
                 ':budget' => $budget,
-                ':statut' => $data['status'] ?? 'Planned'
+                ':status' => $data['status'] ?? 'Planned'
             ]);
 
             if (!$result) {
@@ -101,26 +98,27 @@ class EventModel {
 
             $eventId = $this->pdo->lastInsertId();
 
-            if (isset($data['requetes']) && is_array($data['requetes'])) {
-                foreach ($data['requetes'] as $requete) {
-                    $sql = "INSERT INTO transaction (montant, id_event) VALUES (:montant, :id_event)";
+            if (isset($data['requests']) && is_array($data['requests'])) {
+                foreach ($data['requests'] as $request) {
+                    $sql = "INSERT INTO transaction (amount, id_event) VALUES (:amount, :id_event)";
                     $stmt = $this->pdo->prepare($sql);
                     $stmt->execute([
-                        ':montant' => (float)($requete['montant'] ?? 0),
+                        ':amount' => (float)($request['amount'] ?? 0),
                         ':id_event' => $eventId
                     ]);
                     $transactionId = $this->pdo->lastInsertId();
 
-                    $sql = "INSERT INTO requete (titre, description, date_limite, statut, id_event, id_transaction) 
-                            VALUES (:titre, :description, :date_limite, :statut, :id_event, :id_transaction)";
+                    $sql = "INSERT INTO request (title, description, deadline, status, id_event, id_transaction, id_vendor) 
+                            VALUES (:title, :description, :deadline, :status, :id_event, :id_transaction, :id_vendor)";
                     $stmt = $this->pdo->prepare($sql);
                     $stmt->execute([
-                        ':titre' => $requete['titre'],
-                        ':description' => $requete['description'] ?? null,
-                        ':date_limite' => $requete['date_limite'] ?? null,
-                        ':statut' => $requete['statut'] ?? 'Open',
+                        ':title' => $request['title'],
+                        ':description' => $request['description'] ?? null,
+                        ':deadline' => $request['deadline'] ?? null,
+                        ':status' => $request['status'] ?? 'Open',
                         ':id_event' => $eventId,
-                        ':id_transaction' => $transactionId
+                        ':id_transaction' => $transactionId,
+                        ':id_vendor' => isset($request['id_vendor']) ? (int)$request['id_vendor'] : null
                     ]);
                 }
             }
@@ -145,37 +143,37 @@ class EventModel {
             }
 
             $updateData = array_merge($existingEvent, $data);
-            $required = ['id', 'user_id', 'title', 'type_id', 'date', 'location', 'expected_guests'];
+            $required = ['id', 'id_client', 'title', 'id_type', 'event_date', 'location', 'expected_guests'];
             foreach ($required as $field) {
                 if (!isset($updateData[$field]) || (is_string($updateData[$field]) && empty(trim($updateData[$field])))) {
                     throw new Exception("Missing or empty required field: $field");
                 }
             }
 
-            $bannerImage = isset($data['image_banniere']) && !empty($data['image_banniere'])
-                ? $data['image_banniere']
-                : $existingEvent['bannerImage'] ?? null;
+            $banner_image = isset($data['banner_image']) && !empty($data['banner_image'])
+                ? $data['banner_image']
+                : $existingEvent['banner_image'] ?? null;
 
-            $expectedGuests = (int)($updateData['expected_guests'] ?? 0);
+            $expected_guests = (int)($updateData['expected_guests'] ?? 0);
             $budget = (float)($updateData['budget'] ?? $existingEvent['budget'] ?? 0);
 
             $sql = "UPDATE {$this->table} 
-                    SET id_client = :id_client, title = :title, id_type = :id_type, date = :date, lieu = :lieu, 
-                        image_banniere = :image_banniere, description = :description, expected_guests = :expected_guests, 
-                        budget = :budget, statut = :statut
+                    SET id_client = :id_client, title = :title, id_type = :id_type, event_date = :event_date, location = :location, 
+                        banner_image = :banner_image, description = :description, expected_guests = :expected_guests, 
+                        budget = :budget, status = :status
                     WHERE id_event = :id_event";
             $stmt = $this->pdo->prepare($sql);
             $result = $stmt->execute([
-                ':id_client' => (int)$updateData['user_id'],
+                ':id_client' => (int)$updateData['id_client'],
                 ':title' => $updateData['title'],
                 ':id_type' => (int)$updateData['id_type'],
-                ':date' => $updateData['date'],
-                ':lieu' => $updateData['location'],
-                ':image_banniere' => $bannerImage,
+                ':event_date' => $updateData['event_date'],
+                ':location' => $updateData['location'],
+                ':banner_image' => $banner_image,
                 ':description' => $updateData['description'] ?? '',
-                ':expected_guests' => $expectedGuests,
+                ':expected_guests' => $expected_guests,
                 ':budget' => $budget,
-                ':statut' => $updateData['status'] ?? 'Planned',
+                ':status' => $updateData['status'] ?? 'Planned',
                 ':id_event' => (int)$updateData['id']
             ]);
 
@@ -183,7 +181,7 @@ class EventModel {
                 throw new Exception('Failed to update event in database');
             }
 
-            $sql = "DELETE FROM requete WHERE id_event = ?";
+            $sql = "DELETE FROM request WHERE id_event = ?";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([(int)$updateData['id']]);
 
@@ -191,26 +189,28 @@ class EventModel {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([(int)$updateData['id']]);
 
-            if (isset($data['requetes']) && is_array($data['requetes'])) {
-                foreach ($data['requetes'] as $requete) {
-                    $sql = "INSERT INTO transaction (montant, id_event) VALUES (:montant, :id_event)";
+            if (isset($data['requests']) && is_array($data['requests'])) {
+                foreach ($data['requests'] as $request) {
+                    $sql = "INSERT INTO transaction (amount, id_event) VALUES (:amount, :id_event)";
                     $stmt = $this->pdo->prepare($sql);
                     $stmt->execute([
-                        ':montant' => (float)($requete['montant'] ?? 0),
+                        ':amount' => (float)($request['amount'] ?? 0),
                         ':id_event' => (int)$updateData['id']
                     ]);
                     $transactionId = $this->pdo->lastInsertId();
 
-                    $sql = "INSERT INTO requete (titre, description, date_limite, statut, id_event, id_transaction) 
-                            VALUES (:titre, :description, :date_limite, :statut, :id_event, :id_transaction)";
+                    $sql = "INSERT INTO request (id_request, title, description, deadline, status, id_event, id_transaction, id_vendor) 
+                            VALUES (:id_request, :title, :description, :deadline, :status, :id_event, :id_transaction, :id_vendor)";
                     $stmt = $this->pdo->prepare($sql);
                     $stmt->execute([
-                        ':titre' => $requete['titre'],
-                        ':description' => $requete['description'] ?? null,
-                        ':date_limite' => $requete['date_limite'] ?? null,
-                        ':statut' => $requete['statut'] ?? 'Open',
+                        ':id_request' => (int)$request['id_request'],
+                        ':title' => $request['title'],
+                        ':description' => $request['description'] ?? null,
+                        ':deadline' => $request['deadline'] ?? null,
+                        ':status' => $request['status'] ?? 'Open',
                         ':id_event' => (int)$updateData['id'],
-                        ':id_transaction' => $transactionId
+                        ':id_transaction' => $transactionId,
+                        ':id_vendor' => isset($request['id_vendor']) ? (int)$request['id_vendor'] : null
                     ]);
                 }
             }
@@ -233,10 +233,10 @@ class EventModel {
                 throw new Exception("Event not found");
             }
 
-            $sql = "UPDATE {$this->table} SET statut = :statut WHERE id_event = :id_event";
+            $sql = "UPDATE {$this->table} SET status = :status WHERE id_event = :id_event";
             $stmt = $this->pdo->prepare($sql);
             $result = $stmt->execute([
-                ':statut' => $status,
+                ':status' => $status,
                 ':id_event' => $id
             ]);
 
@@ -256,7 +256,7 @@ class EventModel {
         try {
             $this->pdo->beginTransaction();
 
-            $sql = "DELETE FROM requete WHERE id_event = ?";
+            $sql = "DELETE FROM request WHERE id_event = ?";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$id]);
 
@@ -280,4 +280,3 @@ class EventModel {
         }
     }
 }
-?>
