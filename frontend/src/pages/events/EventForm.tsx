@@ -378,78 +378,78 @@ export const EventForm = () => {
   };
 
   const handleSubmitEvent = async () => {
-    if (!eventData.basicInfo) {
-      alert('Please complete the basic event information');
-      return;
-    }
+  if (!eventData.basicInfo) {
+    alert('Please complete the basic event information');
+    return;
+  }
 
-    if (!currentUser?.id) {
-      alert('User not authenticated. Please log in.');
-      navigate('/login');
-      return;
-    }
+  if (!currentUser?.id) {
+    alert('User not authenticated. Please log in.');
+    navigate('/login');
+    return;
+  }
 
-    setIsCreating(true);
+  setIsCreating(true);
+  try {
+    const requestsPayload = Object.values(eventData.requetes)
+      .flat()
+      .map(requete => ({
+        title: requete.title,
+        description: requete.description,
+        deadline: requete.date_limit,
+        status: requete.status,
+        amount: requete.amount,
+        id_vendor: requete.vendor_id,
+      }));
+
+    const eventPayload = {
+      id_client: currentUser.id,
+      title: eventData.basicInfo.title,
+      id_type: eventTypeMap[eventData.basicInfo.type.toLowerCase()],
+      event_date: eventData.basicInfo.date,
+      location: eventData.basicInfo.lieu,
+      banner_image: eventData.image_banniere_url || '',
+      description: eventData.basicInfo.description || '',
+      expected_guests: eventData.basicInfo.expected_guests,
+      budget: eventData.budget,
+      requests: requestsPayload, // Changed from requetes to requests
+    };
+
+    console.log('Sending event payload:', eventPayload);
+
+    const eventResponse = await fetch('http://localhost/pfe/backend/src/api/events.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(eventPayload),
+    });
+
+    const responseText = await eventResponse.text();
+    console.log('Raw response:', responseText);
+
+    let eventResult;
     try {
-      const requetesPayload = Object.values(eventData.requetes)
-        .flat()
-        .map(requete => ({
-          titre: requete.title,
-          description: requete.description,
-          date_limite: requete.date_limit,
-          statut: requete.status,
-          montant: requete.amount,
-          vendor_id: requete.vendor_id,
-        }));
-
-      const eventPayload = {
-        user_id: currentUser.id,
-        title: eventData.basicInfo.title,
-        type_id: eventTypeMap[eventData.basicInfo.type.toLowerCase()],
-        date: eventData.basicInfo.date,
-        location: eventData.basicInfo.lieu,
-        image_banniere: eventData.image_banniere_url || '',
-        description: eventData.basicInfo.description || '',
-        expected_guests: eventData.basicInfo.expected_guests,
-        budget: eventData.budget,
-        requetes: requetesPayload,
-      };
-
-      console.log('Sending event payload:', eventPayload);
-
-      const eventResponse = await fetch('http://localhost/pfe/backend/src/api/events.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(eventPayload),
-      });
-
-      const responseText = await eventResponse.text();
-      console.log('Raw response:', responseText);
-
-      let eventResult;
-      try {
-        eventResult = JSON.parse(responseText);
-      } catch (err) {
-        console.error('Failed to parse JSON:', err);
-        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
-      }
-
-      if (!eventResponse.ok || !eventResult.success) {
-        throw new Error(eventResult.message || 'Failed to create event');
-      }
-
-      alert('Event created successfully!');
-      navigate('/events');
-    } catch (error) {
-      console.error('Error creating event:', error);
-      alert(`Failed to create event: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsCreating(false);
+      eventResult = JSON.parse(responseText);
+    } catch (err) {
+      console.error('Failed to parse JSON:', err);
+      throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
     }
-  };
+
+    if (!eventResponse.ok || !eventResult.success) {
+      throw new Error(eventResult.message || 'Failed to create event');
+    }
+
+    alert('Event created successfully!');
+    navigate('/events');
+  } catch (error) {
+    console.error('Error creating event:', error);
+    alert(`Failed to create event: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    setIsCreating(false);
+  }
+};
 
   const renderStep = () => {
     switch (currentStep) {

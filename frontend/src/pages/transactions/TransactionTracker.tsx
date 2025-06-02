@@ -17,13 +17,15 @@ interface Event {
 
 interface Requete {
   id: string;
-  titre: string;
+  title: string; 
   description: string | null;
-  date_limite: string | null;
-  status: 'Open' | 'In Progress' | 'Completed' | 'Cancelled';
-  transaction_montant: number | null;
+  deadline: string | null; 
+  status: 'Open' | 'Under Consideration' | 'Completed' | 'Cancelled'; 
+  amount: number | null; 
   transaction_date: string | null;
 }
+
+
 
 interface EventWithRequetes {
   event: Event;
@@ -31,9 +33,6 @@ interface EventWithRequetes {
   error?: string;
 }
 
-interface CurrentUser {
-  id: number; // Explicitly define id as number based on database
-}
 
 export const TransactionTracker = () => {
   const { currentUser } = useAuth();
@@ -43,134 +42,134 @@ export const TransactionTracker = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
 
-  const fetchEventsAndRequetes = useCallback(async () => {
-    if (!currentUser?.id) {
-      toast.error('You must be logged in to view transactions.');
-      setIsLoading(false);
-      return;
-    }
+const fetchEventsAndRequetes = useCallback(async () => {
+  if (!currentUser?.id) {
+    toast.error('You must be logged in to view transactions.');
+    setIsLoading(false);
+    return;
+  }
 
-    setIsLoading(true);
+  setIsLoading(true);
+  try {
+    const eventsResponse = await fetch(`http://localhost/pfe/backend/src/api/events.php?id_client=${currentUser.id}`);
+    if (!eventsResponse.ok) {
+      throw new Error(`Failed to fetch events: ${eventsResponse.status} ${eventsResponse.statusText}`);
+    }
+    const eventsResponseClone = eventsResponse.clone();
+    let eventsData;
     try {
-      const eventsResponse = await fetch(`http://localhost/pfe/backend/src/api/events.php?userId=${currentUser.id}`);
-      if (!eventsResponse.ok) {
-        throw new Error(`Failed to fetch events: ${eventsResponse.status} ${eventsResponse.statusText}`);
-      }
-      const eventsResponseClone = eventsResponse.clone();
-      let eventsData;
-      try {
-        eventsData = await eventsResponse.json();
-      } catch (e) {
-        const text = await eventsResponseClone.text();
-        console.error('Invalid JSON from events:', text, e);
-        throw new Error('Invalid JSON response from events');
-      }
-      const events = Array.isArray(eventsData.data) ? eventsData.data : [];
-
-      const eventsWithRequetesPromises = events.map(async (event: Event) => {
-        try {
-          const requetesResponse = await fetch(
-            `http://localhost/pfe/backend/src/api/requetes.php?event_id=${event.id}&userId=${currentUser.id}`
-          );
-          if (!requetesResponse.ok) {
-            throw new Error(`Failed to fetch requetes: ${requetesResponse.statusText}`);
-          }
-          const requetesResponseClone = requetesResponse.clone();
-          let requetesData;
-          try {
-            requetesData = await requetesResponse.json();
-          } catch (e) {
-            const text = await requetesResponseClone.text();
-            console.error(`Invalid JSON from requetes for event ${event.id}:`, text, e);
-            return { event, requetes: [], error: 'Failed to load requests due to invalid server response' };
-          }
-          if (!requetesData.success) {
-            return { event, requetes: [], error: requetesData.message || 'Failed to load requests' };
-          }
-          const requetes = Array.isArray(requetesData.data)
-            ? requetesData.data.map((req: any) => ({
-                id: String(req.id_requete || req.id),
-                titre: req.titre || 'Untitled',
-                description: req.description || null,
-                date_limite: req.date_limite || null,
-                status: ['Open', 'In Progress', 'Completed', 'Cancelled'].includes(req.status || req.statut)
-                  ? (req.status || req.statut)
-                  : 'Open',
-                transaction_montant:
-                  req.transaction_montant != null ? parseFloat(req.transaction_montant) : null,
-                transaction_date: req.transaction_date || null,
-              }))
-            : [];
-          return { event, requetes };
-        } catch (e: unknown) {
-          const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-          console.error(`Error fetching requetes for event ${event.id}:`, e);
-          return { event, requetes: [], error: errorMessage };
-        }
-      });
-
-      const results = await Promise.all(eventsWithRequetesPromises);
-      setEventsWithRequetes(results);
-      const failedEvents = results.filter(r => r.error).map(r => r.event.title);
-      if (failedEvents.length > 0) {
-        toast.error(`Failed to load requests for: ${failedEvents.join(', ')}`);
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error fetching events:', error);
-      toast.error(errorMessage || 'Failed to load events and requests');
-      setEventsWithRequetes([]);
-    } finally {
-      setIsLoading(false);
+      eventsData = await eventsResponse.json();
+    } catch (e) {
+      const text = await eventsResponseClone.text();
+      console.error('Invalid JSON from events:', text, e);
+      throw new Error('Invalid JSON response from events');
     }
-  }, [currentUser]);
+    const events = Array.isArray(eventsData.data) ? eventsData.data : [];
+
+    const eventsWithRequetesPromises = events.map(async (event: Event) => {
+      try {
+        const requetesResponse = await fetch(
+          `http://localhost/pfe/backend/src/api/requests.php?id_event=${event.id}&id_client=${currentUser.id}`
+        );
+        if (!requetesResponse.ok) {
+          throw new Error(`Failed to fetch requetes: ${requetesResponse.statusText}`);
+        }
+        const requetesResponseClone = requetesResponse.clone();
+        let requetesData;
+        try {
+          requetesData = await requetesResponse.json();
+        } catch (e) {
+          const text = await requetesResponseClone.text();
+          console.error(`Invalid JSON from requetes for event ${event.id}:`, text, e);
+          return { event, requetes: [], error: 'Failed to load requests due to invalid server response' };
+        }
+        if (!requetesData.success) {
+          return { event, requetes: [], error: requetesData.message || 'Failed to load requests' };
+        }
+        const requetes = Array.isArray(requetesData.data)
+          ? requetesData.data.map((req: any) => ({
+              id: String(req.id_request || req.id || ''), // Ensure valid ID
+              title: req.title || 'Untitled',
+              description: req.description || null,
+              date_limite: req.deadline || null,
+              status: ['Open', 'Under Consideration', 'Completed', 'Cancelled'].includes(req.status)
+                ? req.status
+                : 'Open',
+              transaction_montant: req.amount != null ? parseFloat(req.amount) : null,
+              transaction_date: req.transaction_date || null,
+            }))
+          : [];
+        return { event, requetes };
+      } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        console.error(`Error fetching requetes for event ${event.id}:`, e);
+        return { event, requetes: [], error: errorMessage };
+      }
+    });
+
+    const results = await Promise.all(eventsWithRequetesPromises);
+    setEventsWithRequetes(results);
+    const failedEvents = results.filter(r => r.error).map(r => r.event.title);
+    if (failedEvents.length > 0) {
+      toast.error(`Failed to load requests for: ${failedEvents.join(', ')}`);
+    }
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error fetching events:', error);
+    toast.error(errorMessage || 'Failed to load events and requests');
+    setEventsWithRequetes([]);
+  } finally {
+    setIsLoading(false);
+  }
+}, [currentUser]);
+
+
 
   useEffect(() => {
     fetchEventsAndRequetes();
   }, [fetchEventsAndRequetes]);
 
-  const retryFetchEvent = async (eventId: string) => {
-    if (!currentUser?.id) {
-      toast.error('You must be logged in to retry loading requests.');
-      return;
+const retryFetchEvent = async (eventId: string) => {
+  if (!currentUser?.id) {
+    toast.error('You must be logged in to retry loading requests.');
+    return;
+  }
+  try {
+    const requetesResponse = await fetch(
+      `http://localhost/pfe/backend/src/api/requests.php?id_event=${eventId}&id_client=${currentUser.id}`
+    );
+    if (!requetesResponse.ok) {
+      throw new Error(`Failed to fetch requetes: ${requetesResponse.statusText}`);
     }
-    try {
-      const requetesResponse = await fetch(
-        `http://localhost/pfe/backend/src/api/requetes.php?event_id=${eventId}&userId=${currentUser.id}`
-      );
-      if (!requetesResponse.ok) {
-        throw new Error(`Failed to fetch requetes: ${requetesResponse.statusText}`);
-      }
-      const requetesData = await requetesResponse.json();
-      if (!requetesData.success) {
-        throw new Error(requetesData.message || 'Failed to load requests');
-      }
-      const requetes = Array.isArray(requetesData.data)
-        ? requetesData.data.map((req: any) => ({
-            id: String(req.id_requete || req.id),
-            titre: req.titre || 'Untitled',
-            description: req.description || null,
-            date_limite: req.date_limite || null,
-            status: ['Open', 'In Progress', 'Completed', 'Cancelled'].includes(req.status || req.statut)
-              ? (req.status || req.statut)
-              : 'Open',
-            transaction_montant:
-              req.transaction_montant != null ? parseFloat(req.transaction_montant) : null,
-            transaction_date: req.transaction_date || null,
-          }))
-        : [];
-      setEventsWithRequetes(prev =>
-        prev.map(item =>
-          item.event.id === eventId ? { ...item, requetes, error: undefined } : item
-        )
-      );
-      toast.success(`Requests for event reloaded successfully`);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? e.message : 'Unknown error';
-      console.error(`Retry failed for event ${eventId}:`, error);
-      toast.error(`Failed to reload requests: ${errorMessage}`);
+    const requetesData = await requetesResponse.json();
+    if (!requetesData.success) {
+      throw new Error(requetesData.message || 'Failed to load requests');
     }
-  };
+    const requetes = Array.isArray(requetesData.data)
+      ? requetesData.data.map((req: any) => ({
+          id: String(req.id_request || req.id || ''), // Ensure valid ID
+          titre: req.title || 'Untitled',
+          description: req.description || null,
+          date_limite: req.deadline || null,
+          status: ['Open', 'Under Consideration', 'Completed', 'Cancelled'].includes(req.status)
+            ? req.status
+            : 'Open',
+          transaction_montant: req.amount != null ? parseFloat(req.amount) : null,
+          transaction_date: req.transaction_date || null,
+        }))
+      : [];
+    setEventsWithRequetes(prev =>
+      prev.map(item =>
+        item.event.id === eventId ? { ...item, requetes, error: undefined } : item
+      )
+    );
+    toast.success(`Requests for event reloaded successfully`);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Retry failed for event ${eventId}:`, error);
+    toast.error(`Failed to reload requests: ${errorMessage}`);
+  }
+};
 
   const toggleEvent = (eventId: string) => {
     setExpandedEvents(prev =>
@@ -180,84 +179,84 @@ export const TransactionTracker = () => {
     );
   };
 
-  const handleUpdateStatus = async (
-    requeteId: string,
-    newStatus: 'Open' | 'In Progress' | 'Completed' | 'Cancelled'
-  ) => {
-    if (!currentUser?.id) {
-      toast.error('You must be logged in to update status.');
-      return;
-    }
-    const event = eventsWithRequetes.find(ewr =>
-      ewr.requetes.some(req => String(req.id) === requeteId)
-    );
-    if (!event) {
-      toast.error('Event not found for this request.');
-      return;
-    }
-    const payload = {
-      id_requete: parseInt(requeteId), // requeteId is string, needs parsing
-      statut: newStatus,
-      id_event: parseInt(event.event.id), // event.id is string, needs parsing
-      user_id: currentUser.id // id is number, no parsing needed
-    };
-    console.log('Updating status:', payload);
-    const originalEventsWithRequetes = [...eventsWithRequetes];
-    setEventsWithRequetes(prev =>
-      prev.map(eventWithReq => ({
-        ...eventWithReq,
-        requetes: eventWithReq.requetes.map(req =>
-          String(req.id) === String(requeteId) ? { ...req, status: newStatus } : req
-        ),
-      }))
-    );
-
-    try {
-      const response = await fetch('http://localhost/pfe/backend/src/api/requetes.php', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const text = await response.text();
-      let responseData;
-      try {
-        responseData = text ? JSON.parse(text) : {};
-      } catch (e) {
-        console.error('Invalid JSON response:', text);
-        throw new Error('Invalid server response');
-      }
-
-      console.log('PUT response:', { status: response.status, responseData });
-
-      if (!response.ok) {
-        const message = responseData.message || `HTTP error ${response.status}`;
-        throw new Error(message);
-      }
-
-      if (responseData.success !== true) {
-        const message = responseData.message || 'Unknown error';
-        throw new Error(`Failed to update status: ${message}`);
-      }
-
-      toast.success('Status updated successfully');
-      const eventId = event.event.id;
-      if (eventId) {
-        await retryFetchEvent(eventId);
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error updating status:', errorMessage);
-      setEventsWithRequetes(originalEventsWithRequetes);
-      const displayMessage = errorMessage.includes('Failed to fetch')
-        ? 'Failed to update status due to network or CORS issue.'
-        : `Failed to update status: ${errorMessage}`;
-      toast.error(displayMessage);
-    }
+const handleUpdateStatus = async (
+  requeteId: string,
+  newStatus: 'Open' | 'Under Consideration' | 'Completed' | 'Cancelled'
+) => {
+  if (!currentUser?.id) {
+    toast.error('You must be logged in to update status.');
+    return;
+  }
+  const event = eventsWithRequetes.find(ewr =>
+    ewr.requetes.some(req => String(req.id) === requeteId)
+  );
+  if (!event) {
+    toast.error('Event not found for this request.');
+    return;
+  }
+  const payload = {
+    id_request: parseInt(requeteId) || 0, // Ensure valid integer
+    status: newStatus,
+    id_event: parseInt(event.event.id) || 0, // Ensure valid integer
+    id_client: currentUser.id // Changed from user_id to id_client
   };
+  console.log('Updating status:', payload);
+  const originalEventsWithRequetes = [...eventsWithRequetes];
+  setEventsWithRequetes(prev =>
+    prev.map(eventWithReq => ({
+      ...eventWithReq,
+      requetes: eventWithReq.requetes.map(req =>
+        String(req.id) === String(requeteId) ? { ...req, status: newStatus } : req
+      ),
+    }))
+  );
+
+  try {
+    const response = await fetch('http://localhost/pfe/backend/src/api/requests.php', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await response.text();
+    let responseData;
+    try {
+      responseData = text ? JSON.parse(text) : {};
+    } catch (e) {
+      console.error('Invalid JSON response:', text);
+      throw new Error('Invalid server response');
+    }
+
+    console.log('PUT response:', { status: response.status, responseData });
+
+    if (!response.ok) {
+      const message = responseData.message || `HTTP error ${response.status}`;
+      throw new Error(message);
+    }
+
+    if (responseData.success !== true) {
+      const message = responseData.message || 'Unknown error';
+      throw new Error(`Failed to update status: ${message}`);
+    }
+
+    toast.success('Status updated successfully');
+    const eventId = event.event.id;
+    if (eventId) {
+      await retryFetchEvent(eventId);
+    }
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error updating status:', errorMessage);
+    setEventsWithRequetes(originalEventsWithRequetes);
+    const displayMessage = errorMessage.includes('Failed to fetch')
+      ? 'Failed to update status due to network or CORS issue.'
+      : `Failed to update status: ${errorMessage}`;
+    toast.error(displayMessage);
+  }
+};
 
   const getTotalBudget = () => {
     return eventsWithRequetes.reduce((total, eventWithReq) => {
@@ -271,7 +270,7 @@ export const TransactionTracker = () => {
       return (
         total +
         eventWithReq.requetes.reduce((sum, req) => {
-          const montant = Number(req.transaction_montant) || 0;
+          const montant = Number(req.amount) || 0;
           return sum + montant;
         }, 0)
       );
@@ -289,7 +288,7 @@ export const TransactionTracker = () => {
 
   const getEventSpent = (requetes: Requete[]) => {
     return requetes.reduce((sum, req) => {
-      const montant = Number(req.transaction_montant) || 0;
+      const montant = Number(req.amount) || 0;
       return sum + montant;
     }, 0);
   };
@@ -504,17 +503,17 @@ export const TransactionTracker = () => {
                               <tr key={requete.id}>
                                 <td className="py-4">
                                   <div>
-                                    <p className="font-medium text-gray-900 text-sm">{requete.titre}</p>
-                                    {requete.date_limite && (
+                                    <p className="font-medium text-gray-900 text-sm">{requete.title}</p>
+                                    {requete.deadline && (
                                       <p className="text-sm text-gray-500">
-                                        Due: {new Date(requete.date_limite).toLocaleDateString()}
+                                        Due: {new Date(requete.deadline).toLocaleDateString()}
                                       </p>
                                     )}
                                   </div>
                                 </td>
                                 <td className="py-4 text-center">
                                   <p className="text-gray-900 text-sm">
-                                    {formatCurrency(requete.transaction_montant ?? 0)}
+                                    {formatCurrency(requete.amount ?? 0)}
                                   </p>
                                 </td>
                                 <td className="py-4 text-center">
@@ -533,7 +532,7 @@ export const TransactionTracker = () => {
                                     onChange={(e) =>
                                       handleUpdateStatus(
                                         requete.id,
-                                        e.target.value as 'Open' | 'In Progress' | 'Completed' | 'Cancelled'
+                                        e.target.value as 'Open' | 'Under Consideration' | 'Completed' | 'Cancelled'
                                       )
                                     }
                                     className="rounded-md border-gray-300 text-sm"

@@ -17,17 +17,17 @@ class User {
 
     // Create a new user
     public function create() {
-        $query = "INSERT INTO " . $this->table_name . " (nom, email, mot_de_passe) 
-                  VALUES (:nom, :email, :mot_de_passe)";
+        $query = "INSERT INTO " . $this->table_name . " (name, email, password) 
+                  VALUES (:name, :email, :password)";
         $stmt = $this->conn->prepare($query);
 
         // Clean data
         $this->name = htmlspecialchars(strip_tags($this->name));
         $this->email = htmlspecialchars(strip_tags($this->email));
 
-        $stmt->bindParam(":nom", $this->name);
+        $stmt->bindParam(":name", $this->name);
         $stmt->bindParam(":email", $this->email);
-        $stmt->bindParam(":mot_de_passe", $this->password);
+        $stmt->bindParam(":password", $this->password);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
@@ -39,7 +39,7 @@ class User {
 
     // Check if email exists
     public function emailExists() {
-        $query = "SELECT id_client, nom, email, mot_de_passe, date_creation 
+        $query = "SELECT id_client, name, email, password, creation_date 
                   FROM " . $this->table_name . " 
                   WHERE email = :email 
                   LIMIT 1";
@@ -52,10 +52,10 @@ class User {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
             $this->id = $row['id_client'];
-            $this->name = $row['nom'];
+            $this->name = $row['name'];
             $this->email = $row['email'];
-            $this->password = $row['mot_de_passe'];
-            $this->created_at = $row['date_creation'];
+            $this->password = $row['password'];
+            $this->created_at = $row['creation_date'];
 
             return true;
         }
@@ -65,7 +65,7 @@ class User {
 
     // Get user by ID
     public function getById($id) {
-        $query = "SELECT id_client, nom, email, date_creation 
+        $query = "SELECT id_client, name, email, creation_date 
                   FROM " . $this->table_name . " 
                   WHERE id_client = :id_client LIMIT 1";
         $stmt = $this->conn->prepare($query);
@@ -78,9 +78,9 @@ class User {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
             $this->id = $row['id_client'];
-            $this->name = $row['nom'];
+            $this->name = $row['name'];
             $this->email = $row['email'];
-            $this->created_at = $row['date_creation'];
+            $this->created_at = $row['creation_date'];
 
             return true;
         }

@@ -19,25 +19,24 @@ import { toast } from 'react-hot-toast';
 interface Event {
   id: string;
   title: string;
-  date: string;
+  event_date: string; // Changed from date
   location: string;
   status: string;
-  bannerImage: string | null;
-  expectedGuests: number;
+  banner_image: string | null; // Changed from bannerImage
+  expected_guests: number; // Changed from expectedGuests
   budget: number;
-  user_id: string;
+  id_client: string; // Changed from user_id
 }
 
 interface Task {
   id: string;
   title: string;
-  date_limite: string | null;
-  statut: string;
+  deadline: string | null; // Changed from date_limite
+  status: string; // Changed from statut
   event_id: string;
-  transaction_montant: number | null;
+  amount: number | null; // Changed from transaction_montant
   vendor_name: string | null;
 }
-
 interface DashboardStats {
   totalEvents: number;
   upcomingEvents: number;
@@ -75,107 +74,116 @@ export const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser?.id) {
       fetchDashboardData();
+    } else {
+      setIsLoading(false);
+      toast.error('You must be logged in to view the dashboard.');
     }
   }, [currentUser]);
 
   const fetchDashboardData = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch all events
-      const eventsResponse = await fetch('http://localhost/pfe/backend/src/api/events.php');
-      if (!eventsResponse.ok) {
-        throw new Error(`Failed to fetch events: ${eventsResponse.status}`);
-      }
-      const eventsData = await eventsResponse.json();
-      if (!eventsData.success || !Array.isArray(eventsData.data)) {
-        throw new Error('Invalid events data format');
-      }
-
-      // Filter events for the current user
-      const formattedEvents: Event[] = eventsData.data
-        .filter((event: any) => event.user_id === currentUser?.id)
-        .map((event: any) => ({
-          id: event.id,
-          title: event.title,
-          date: event.date,
-          location: event.location || 'Not specified',
-          status: event.status.toLowerCase(),
-          bannerImage: event.bannerImage,
-          expectedGuests: parseInt(event.expectedGuests) || 0,
-          budget: parseFloat(event.budget) || 0,
-          user_id: event.user_id,
-        }));
-
-      // Fetch tasks (requetes) for each event
-      let allTasks: Task[] = [];
-      for (const event of formattedEvents) {
-        const tasksResponse = await fetch(
-          `http://localhost/pfe/backend/src/api/requetes.php?event_id=${event.id}`
-        );
-        if (!tasksResponse.ok) {
-          console.warn(`Failed to fetch tasks for event ${event.id}: ${tasksResponse.status}`);
-          continue;
-        }
-        const tasksData = await tasksResponse.json();
-        if (tasksData.success && Array.isArray(tasksData.data)) {
-          const formattedTasks: Task[] = tasksData.data.map((task: any) => ({
-            id: task.id,
-            titre: task.titre,
-            date_limite: task.date_limite,
-            statut: task.statut,
-            event_id: event.id,
-            transaction_montant: task.transaction_montant ? parseFloat(task.transaction_montant) : null,
-            vendor_name: task.vendor_name || null,
-          }));
-          allTasks = [...allTasks, ...formattedTasks];
-        }
-      }
-
-      // Calculate stats
-      const today = new Date('2025-05-31');
-      const totalGuests = formattedEvents.reduce((sum, e) => sum + e.expectedGuests, 0);
-      const totalBudget = formattedEvents.reduce((sum, e) => sum + e.budget, 0);
-      const upcomingEvents = formattedEvents.filter(
-        (e) => new Date(e.date) > today
-      ).length;
-      const completedTasks = allTasks.filter((t) => t.statut === 'Completed').length;
-      const pendingTasks = allTasks.filter(
-        (t) => t.statut === 'Open' || t.statut === 'In Progress'
-      ).length;
-
-      // Transaction calculations
-      let totalSpent = 0;
-      allTasks.forEach((task) => {
-        if (task.transaction_montant) {
-          totalSpent += task.transaction_montant;
-        }
-      });
-
-      setEvents(formattedEvents);
-      setTasks(allTasks);
-      setStats({
-        totalEvents: formattedEvents.length,
-        upcomingEvents,
-        totalGuests,
-        totalBudget,
-        completedTasks,
-        pendingTasks,
-      });
-      setTransactionSummary({
-        total: totalBudget,
-        spent: totalSpent,
-        remaining: totalBudget - totalSpent,
-        progress: totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0,
-      });
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to load dashboard data');
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  try {
+    if (!currentUser?.id) {
+      throw new Error('User ID is missing');
     }
-  };
+
+    // Fetch events for the current user
+    const eventsResponse = await fetch(`http://localhost/pfe/backend/src/api/events.php?id_client=${currentUser.id}`);
+    if (!eventsResponse.ok) {
+      const text = await eventsResponse.text();
+      console.error('Events response status:', eventsResponse.status, 'Raw response:', text);
+      throw new Error(`Failed to fetch events: ${eventsResponse.status}`);
+    }
+    const eventsData = await eventsResponse.json();
+    console.log('Events API response:', eventsData);
+    if (!eventsData.success || !Array.isArray(eventsData.data)) {
+      throw new Error('Invalid events data format');
+    }
+
+    // Format events
+    const formattedEvents: Event[] = eventsData.data.map((event: any) => ({
+      id: event.id.toString(), // Ensure string ID
+      title: event.title,
+      event_date: event.event_date,
+      location: event.location || 'Not specified',
+      status: event.status.toLowerCase(),
+      banner_image: event.banner_image || null,
+      expected_guests: parseInt(event.expected_guests) || 0,
+      budget: parseFloat(event.budget) || 0,
+      id_client: event.id_client.toString(),
+    }));
+
+    // Fetch tasks (requetes) for each event
+    let allTasks: Task[] = [];
+    for (const event of formattedEvents) {
+      const tasksResponse = await fetch(
+        `http://localhost/pfe/backend/src/api/requests.php?id_event=${event.id}&id_client=${currentUser.id}`
+      );
+      if (!tasksResponse.ok) {
+        console.warn(`Failed to fetch tasks for event ${event.id}: ${tasksResponse.status}`);
+        continue;
+      }
+      const tasksData = await tasksResponse.json();
+      console.log(`Tasks API response for event ${event.id}:`, tasksData);
+      if (tasksData.success && Array.isArray(tasksData.data)) {
+        const formattedTasks: Task[] = tasksData.data.map((task: any) => ({
+          id: (task.id_request || task.id).toString(),
+          title: task.title,
+          deadline: task.deadline || null,
+          status: task.status,
+          event_id: event.id,
+          amount: task.amount ? parseFloat(task.amount) : null,
+          vendor_name: task.id_vendor ? `Vendor ${task.id_vendor}` : null, // Placeholder, adjust as needed
+        }));
+        allTasks = [...allTasks, ...formattedTasks];
+      }
+    }
+
+    // Calculate stats
+    const today = new Date();
+    const totalGuests = formattedEvents.reduce((sum, e) => sum + e.expected_guests, 0);
+    const totalBudget = formattedEvents.reduce((sum, e) => sum + e.budget, 0);
+    const upcomingEvents = formattedEvents.filter(
+      (e) => new Date(e.event_date) > today
+    ).length;
+    const completedTasks = allTasks.filter((t) => t.status === 'Completed').length;
+    const pendingTasks = allTasks.filter(
+      (t) => t.status === 'Open' || t.status === 'In Progress'
+    ).length;
+
+    // Transaction calculations
+    let totalSpent = 0;
+    allTasks.forEach((task) => {
+      if (task.amount) {
+        totalSpent += task.amount;
+      }
+    });
+
+    setEvents(formattedEvents);
+    setTasks(allTasks);
+    setStats({
+      totalEvents: formattedEvents.length,
+      upcomingEvents,
+      totalGuests,
+      totalBudget,
+      completedTasks,
+      pendingTasks,
+    });
+    setTransactionSummary({
+      total: totalBudget,
+      spent: totalSpent,
+      remaining: totalBudget - totalSpent,
+      progress: totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0,
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+    toast.error(error instanceof Error ? error.message : 'Failed to load dashboard data');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -207,6 +215,10 @@ export const Dashboard = () => {
     }
   };
 
+  if (isLoading) {
+    return <div className="text-center py-8">Loading...</div>;
+  }
+
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <div className="mb-8">
@@ -227,7 +239,7 @@ export const Dashboard = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Upcoming Events</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {isLoading ? '-' : stats.upcomingEvents}
+                  {stats.upcomingEvents}
                 </p>
               </div>
             </div>
@@ -243,7 +255,7 @@ export const Dashboard = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Guests</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {isLoading ? '-' : stats.totalGuests.toLocaleString()}
+                  {stats.totalGuests.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -259,7 +271,7 @@ export const Dashboard = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Budget</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {isLoading ? '-' : formatCurrency(stats.totalBudget)}
+                  {formatCurrency(stats.totalBudget)}
                 </p>
               </div>
             </div>
@@ -275,7 +287,7 @@ export const Dashboard = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Requetes</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {isLoading ? '-' : `${stats.completedTasks}/${stats.completedTasks + stats.pendingTasks}`}
+                  {`${stats.completedTasks}/${stats.completedTasks + stats.pendingTasks}`}
                 </p>
               </div>
             </div>
@@ -294,7 +306,7 @@ export const Dashboard = () => {
           </Link>
         </div>
 
-        {events.length === 0 && !isLoading ? (
+        {events.length === 0 ? (
           <Card>
             <CardContent className="p-6 text-center">
               <p className="text-gray-600">No upcoming events found. Create a new event to get started!</p>
@@ -303,14 +315,14 @@ export const Dashboard = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {events
-              .filter((event) => new Date(event.date) > new Date('2025-05-31'))
+              .filter((event) => new Date(event.event_date) > new Date())
               .slice(0, 3)
               .map((event) => (
                 <Card key={event.id} className="overflow-hidden">
                   <div className="h-40 bg-gray-200 relative">
-                    {event.bannerImage ? (
+                    {event.banner_image ? (
                       <img
-                        src={event.bannerImage}
+                        src={event.banner_image}
                         alt={event.title}
                         className="w-full h-full object-cover"
                       />
@@ -331,7 +343,7 @@ export const Dashboard = () => {
                     <div className="text-sm text-gray-500 mb-2">
                       <div className="flex items-center mb-1">
                         <Calendar className="h-4 w-4 mr-1" />
-                        <span>{formatDate(event.date, 'PPP')}</span>
+                        <span>{formatDate(event.event_date, 'PPP')}</span>
                       </div>
                       {event.location && (
                         <div className="flex items-center">
@@ -395,12 +407,12 @@ export const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-medium mb-4">Recent Transactions</h3>
-                {tasks.filter((task) => task.transaction_montant).length === 0 ? (
+                {tasks.filter((task) => task.amount).length === 0 ? (
                   <p className="text-gray-600">No transactions found.</p>
                 ) : (
                   <div className="space-y-3">
                     {tasks
-                      .filter((task) => task.transaction_montant)
+                      .filter((task) => task.amount)
                       .slice(0, 5)
                       .map((task) => (
                         <div
@@ -408,13 +420,13 @@ export const Dashboard = () => {
                           className="flex justify-between items-center p-2 bg-gray-50 rounded-lg"
                         >
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{task.titre}</p>
+                            <p className="text-sm font-medium text-gray-900">{task.title}</p>
                             <p className="text-xs text-gray-500">
                               {task.vendor_name || 'Unknown Vendor'}
                             </p>
                           </div>
                           <p className="text-sm font-medium text-gray-700">
-                            {formatCurrency(task.transaction_montant!)}
+                            {formatCurrency(task.amount!)}
                           </p>
                         </div>
                       ))}
@@ -466,6 +478,6 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
       </div>  
-      </div>
-        );
+    </div>
+  );
 };

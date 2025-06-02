@@ -23,6 +23,7 @@ try {
                 http_response_code(200);
                 $event['budget'] = (float)$event['budget'];
                 $event['id_type'] = (int)$event['id_type'];
+                $event['id_client'] = (int)$event['id_client'];
                 echo json_encode([
                     'success' => true,
                     'data' => $event
@@ -37,9 +38,9 @@ try {
             exit;
         }
 
-        if (isset($_GET['userId']) && is_numeric($_GET['userId'])) {
-            $userId = (int)$_GET['userId'];
-            $events = $controller->getEventsByUserId($userId);
+        if (isset($_GET['id_client']) && is_numeric($_GET['id_client'])) {
+            $id_client = (int)$_GET['id_client'];
+            $events = $controller->getEventsByClientId($id_client);
             ob_clean();
             http_response_code(200);
             echo json_encode([
@@ -47,19 +48,20 @@ try {
                 'data' => array_map(function($event) {
                     $event['budget'] = (float)$event['budget'];
                     $event['id_type'] = (int)$event['id_type'];
+                    $event['id_client'] = (int)$event['id_client'];
                     return $event;
                 }, $events)
             ], JSON_THROW_ON_ERROR);
             exit;
-        } else {
-            ob_clean();
-            http_response_code(400);
-            echo json_encode([
-                'success' => false,
-                'message' => 'userId parameter is required'
-            ], JSON_THROW_ON_ERROR);
-            exit;
         }
+
+        ob_clean();
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'id_client parameter is required'
+        ], JSON_THROW_ON_ERROR);
+        exit;
     }
 
     if ($method === 'POST') {
@@ -79,7 +81,7 @@ try {
 
         error_log("Parsed POST input: " . json_encode($input));
 
-        $required = ['user_id', 'title', 'type_id', 'date', 'location', 'expected_guests'];
+        $required = ['id_client', 'title', 'id_type', 'event_date', 'location', 'expected_guests'];
         foreach ($required as $field) {
             if (!isset($input[$field])) {
                 ob_clean();
@@ -101,24 +103,88 @@ try {
             }
         }
 
+        // Validate event_date format (YYYY-MM-DD)
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $input['event_date']) || !strtotime($input['event_date'])) {
+            ob_clean();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid event_date format, expected YYYY-MM-DD'
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        // Validate status if provided
+        if (isset($input['status']) && !in_array($input['status'], ['Planned', 'Ongoing', 'Completed', 'Cancelled'])) {
+            ob_clean();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid status value'
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        // Validate requests if provided
+        if (isset($input['requests']) && is_array($input['requests'])) {
+            foreach ($input['requests'] as $request) {
+                if (!isset($request['title']) || empty(trim($request['title']))) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Request title is required'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+                if (isset($request['amount']) && (!is_numeric($request['amount']) || $request['amount'] <= 0)) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Request amount must be a positive number'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+                if (isset($request['id_vendor']) && !is_numeric($request['id_vendor'])) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Request id_vendor must be numeric'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+                if (isset($request['deadline']) && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $request['deadline']) || !strtotime($request['deadline']))) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid request deadline format, expected YYYY-MM-DD'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+                if (isset($request['status']) && !in_array($request['status'], ['Open', 'In Progress', 'Completed', 'Cancelled'])) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid request status value'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+            }
+        }
+
         try {
             $newEventId = $controller->addEvent($input);
-            if ($newEventId) {
-                ob_clean();
-                http_response_code(201);
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Event created successfully',
-                    'id' => $newEventId
-                ], JSON_THROW_ON_ERROR);
-            } else {
-                ob_clean();
-                http_response_code(500);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Failed to create event: Unknown error'
-                ], JSON_THROW_ON_ERROR);
-            }
+            ob_clean();
+            http_response_code(201);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Event created successfully',
+                'id' => $newEventId
+            ], JSON_THROW_ON_ERROR);
         } catch (Exception $e) {
             error_log('Event creation failed: ' . $e->getMessage());
             error_log('Stack trace: ' . $e->getTraceAsString());
@@ -153,6 +219,88 @@ try {
                 'message' => 'Event ID is required and must be numeric'
             ], JSON_THROW_ON_ERROR);
             exit;
+        }
+
+        // Validate event_date format if provided
+        if (isset($input['event_date']) && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $input['event_date']) || !strtotime($input['event_date']))) {
+            ob_clean();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid event_date format, expected YYYY-MM-DD'
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        // Validate status if provided
+        if (isset($input['status']) && !in_array($input['status'], ['Planned', 'Ongoing', 'Completed', 'Cancelled'])) {
+            ob_clean();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid status value'
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        // Validate requests if provided
+        if (isset($input['requests']) && is_array($input['requests'])) {
+            foreach ($input['requests'] as $request) {
+                if (!isset($request['id_request']) || !is_numeric($request['id_request'])) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Request ID is required and must be numeric'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+                if (!isset($request['title']) || empty(trim($request['title']))) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Request title is required'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+                if (isset($request['amount']) && (!is_numeric($request['amount']) || $request['amount'] <= 0)) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Request amount must be a positive number'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+                if (isset($request['id_vendor']) && !is_numeric($request['id_vendor'])) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Request id_vendor must be numeric'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+                if (isset($request['deadline']) && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $request['deadline']) || !strtotime($request['deadline']))) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid request deadline format, expected YYYY-MM-DD'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+                if (isset($request['status']) && !in_array($request['status'], ['Open', 'In Progress', 'Completed', 'Cancelled'])) {
+                    ob_clean();
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid request status value'
+                    ], JSON_THROW_ON_ERROR);
+                    exit;
+                }
+            }
         }
 
         try {
