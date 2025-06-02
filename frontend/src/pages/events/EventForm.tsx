@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
   MapPin,
@@ -32,15 +32,7 @@ const eventTypeMap: Record<string, number> = {
   concert: 4,
 };
 
-// Map id_type to event type names for pre-filling
-const reverseEventTypeMap: Record<number, string> = {
-  1: 'wedding',
-  2: 'birthday',
-  3: 'corporate',
-  4: 'concert',
-};
-
-// Schema aligned with database, theme removed
+// Schema aligned with database
 const eventSchema = z.object({
   title: z.string().min(1, 'Event name is required'),
   type: z.string().min(1, 'Event type is required'),
@@ -68,23 +60,18 @@ interface Vendor {
 }
 
 interface Requete {
-  id?: string;
+  id: string;
   title: string;
   description: string | null;
   date_limit: string | null;
   status: 'Open' | 'In Progress' | 'Completed' | 'Cancelled';
   amount: number;
-  id_transaction?: number | null;
-  vendor_id?: string | null;
+  vendor_id: string | null;
 }
 
 export const EventForm = () => {
   const navigate = useNavigate();
-  const { state } = useLocation();
   const { currentUser } = useAuth();
-  const isEdit = state?.isEdit || false;
-  const event = state?.event || null;
-
   const [currentStep, setCurrentStep] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -121,110 +108,12 @@ export const EventForm = () => {
 
   const eventType = watch('type');
 
-  // Pre-fill form for edit mode
-  useEffect(() => {
-    if (isEdit && event) {
-      reset({
-        title: event.title || '',
-        type: reverseEventTypeMap[event.id_type] || '',
-        date: event.date || '',
-        lieu: event.location || '',
-        description: event.description || '',
-        expected_guests: event.expectedGuests || 0,
-        budget: event.budget || 0,
-        image_banniere: null,
-      });
-      setBannerImagePreview(event.bannerImage || '');
-      setEventData(prev => ({
-        ...prev,
-        budget: event.budget || 0,
-        image_banniere_url: event.bannerImage || '',
-      }));
-      fetchEventVendorsAndRequetes();
-    }
-  }, [isEdit, event, reset]);
-
-  // Fetch vendors and requetes for the event in edit mode
-const fetchEventVendorsAndRequetes = async () => {
-  if (!event?.id) return;
-  try {
-    console.log('Fetching requetes for event ID:', event.id);
-    const response = await fetch(`http://localhost/pfe/backend/src/api/requetes.php?event_id=${event.id}`);
-    if (!response.ok) throw new Error('Failed to fetch requetes');
-    const requeteData = await response.json();
-    if (!requeteData.success) throw new Error(requeteData.message || 'Failed to fetch requetes');
-
-    console.log('Fetching vendors');
-    const vendorsResponse = await fetch('http://localhost/pfe/backend/src/api/vendor.php');
-    if (!vendorsResponse.ok) throw new Error('Failed to fetch vendors');
-    const vendorsData = await vendorsResponse.json();
-
-    const vendorList = Array.isArray(vendorsData)
-      ? vendorsData
-      : vendorsData.data && Array.isArray(vendorsData.data)
-      ? vendorsData.data
-      : [];
-
-    const requetesByVendor: Record<string, Requete[]> = {};
-    const selectedVendors: Vendor[] = [];
-
-    console.log('Processing requetes:', requeteData.data);
-    if (requeteData.data && Array.isArray(requeteData.data)) {
-      for (const req of requeteData.data) {
-        const vendorId = req.vendor_id ? String(req.vendor_id) : `unknown-${req.id_requete}`;
-        if (!requetesByVendor[vendorId]) {
-          requetesByVendor[vendorId] = [];
-        }
-
-        requetesByVendor[vendorId].push({
-          id: String(req.id_requete),
-          title: req.titre,
-          description: req.description || null,
-          date_limit: req.date_limite || null,
-          status: req.statut,
-          amount: parseFloat(req.transaction_montant) || 0,
-          id_transaction: req.id_transaction || null,
-          vendor_id: req.vendor_id ? String(req.vendor_id) : null,
-        });
-
-        if (req.vendor_id && !selectedVendors.some(v => v.id === String(req.vendor_id))) {
-          const vendor = vendorList.find((v: any) => v.id === String(req.vendor_id));
-          if (vendor) {
-            selectedVendors.push({
-              id: vendor.id,
-              name: vendor.name,
-              category: vendor.category || 'Unknown',
-              description: vendor.description || '',
-              rating: parseFloat(vendor.rating || 0),
-              price: `$${parseFloat(vendor.price || 0).toFixed(2)}`,
-              phone: vendor.contactPhone || '',
-              image: vendor.image || null,
-            });
-          }
-        }
-      }
-    }
-
-    console.log('Setting selected vendors:', selectedVendors);
-    console.log('Requetes by vendor:', requetesByVendor);
-    setEventData(prev => ({
-      ...prev,
-      selectedVendors,
-      requetes: requetesByVendor,
-    }));
-  } catch (error) {
-    console.error('Error fetching event vendors/requetes:', error);
-    alert('Failed to load event vendors and requirements. You can still edit other details.');
-  }
-};
-
   useEffect(() => {
     if (eventType) {
       setSelectedTypeId(eventTypeMap[eventType.toLowerCase()] || null);
     }
   }, [eventType]);
 
-  // Simplified budget validation
   useEffect(() => {
     if (eventData.budget <= 0) {
       setCanSelectVendors(false);
@@ -293,7 +182,7 @@ const fetchEventVendorsAndRequetes = async () => {
           name: v.name,
           category: v.category || 'Unknown',
           description: v.description || '',
-          rating: parseFloat(v.note || 0),
+          rating: parseFloat(v.rating || 0),
           price: `$${parseFloat(v.price || 0).toFixed(2)}`,
           phone: v.phone || '',
           image: v.image || null,
@@ -346,59 +235,55 @@ const fetchEventVendorsAndRequetes = async () => {
     setCurrentStep(2);
   };
 
-const toggleVendor = (vendor: Vendor) => {
-  console.log('Toggling vendor:', vendor.name, 'ID:', vendor.id);
-  const vendorPrice = parseFloat(vendor.price?.replace('$', '') || '0') || 0;
-  console.log('Vendor price:', vendorPrice, 'Budget:', eventData.budget);
-
-  if (eventData.budget < vendorPrice) {
-    console.log('Budget too low for vendor');
-    alert(`Cannot select ${vendor.name}. Your budget ($${eventData.budget.toFixed(2)}) is less than the vendor's price (${vendor.price}).`);
-    return;
-  }
-
-  setEventData(prev => {
-    const isSelected = prev.selectedVendors.some(v => v.id === vendor.id);
-    console.log('Is vendor selected?', isSelected);
-    const newVendors = isSelected
-      ? prev.selectedVendors.filter(v => v.id !== vendor.id)
-      : [...prev.selectedVendors, vendor];
-
-    const totalCost = newVendors.reduce((sum, v) => sum + (parseFloat(v.price?.replace('$', '') || '0') || 0), 0);
-    console.log('New total cost:', totalCost);
-    if (totalCost > prev.budget) {
-      console.log('Total cost exceeds budget');
-      alert(`Cannot select ${vendor.name}. Total vendor cost ($${totalCost.toFixed(2)}) exceeds your budget ($${prev.budget.toFixed(2)}).`);
-      return prev;
+  const toggleVendor = (vendor: Vendor) => {
+    const vendorPrice = parseFloat(vendor.price?.replace('$', '') || '0') || 0;
+    if (eventData.budget < vendorPrice) {
+      alert(`Cannot select ${vendor.name}. Your budget ($${eventData.budget.toFixed(2)}) is less than the vendor's price (${vendor.price}).`);
+      return;
     }
 
-    const newRequetes = { ...prev.requetes };
-    if (!isSelected) {
-      newRequetes[vendor.id] = [
-        {
-          id: `${vendor.id}-${Date.now()}`,
-          title: `Confirm details with ${vendor.name}`,
-          description: null,
-          date_limit: null,
-          status: 'Open' as const,
-          amount: vendorPrice,
-          vendor_id: vendor.id,
-        },
-      ];
-    } else {
-      delete newRequetes[vendor.id];
-    }
+    setEventData(prev => {
+      const isSelected = prev.selectedVendors.some(v => v.id === vendor.id);
+      const newVendors = isSelected
+        ? prev.selectedVendors.filter(v => v.id !== vendor.id)
+        : [...prev.selectedVendors, vendor];
 
-    console.log('Updating selected vendors:', newVendors);
-    return {
-      ...prev,
-      selectedVendors: newVendors,
-      requetes: newRequetes,
-    };
-  });
-};
+      const totalCost = newVendors.reduce((sum, v) => sum + (parseFloat(v.price?.replace('$', '') || '0') || 0), 0);
+      if (totalCost > prev.budget) {
+        alert(`Cannot select ${vendor.name}. Total vendor cost ($${totalCost.toFixed(2)}) exceeds your budget ($${prev.budget.toFixed(2)}).`);
+        return prev;
+      }
+
+      const newRequetes = { ...prev.requetes };
+      if (!isSelected) {
+        newRequetes[vendor.id] = [
+          {
+            id: `${vendor.id}-${Date.now()}`,
+            title: `Confirm details with ${vendor.name}`,
+            description: null,
+            date_limit: null,
+            status: 'Open' as const,
+            amount: vendorPrice,
+            vendor_id: vendor.id,
+          },
+        ];
+      } else {
+        delete newRequetes[vendor.id];
+      }
+
+      return {
+        ...prev,
+        selectedVendors: newVendors,
+        requetes: newRequetes,
+      };
+    });
+  };
 
   const addRequete = (vendorId: string, title: string, amount: number) => {
+    if (!title.trim()) {
+      alert('Requete title is required.');
+      return;
+    }
     if (amount <= 0) {
       alert('Requete amount must be greater than zero.');
       return;
@@ -427,20 +312,21 @@ const toggleVendor = (vendor: Vendor) => {
             date_limit: null,
             status: 'Open' as const,
             amount,
+            vendor_id: vendorId,
           },
         ],
       },
     }));
   };
 
-  const updateRequeteAmount = (vendorId: string, requeteId: string | number, amount: number) => {
+  const updateRequeteAmount = (vendorId: string, requeteId: string, amount: number) => {
     if (amount <= 0) {
       alert('Requete amount must be greater than zero.');
       return;
     }
     const totalRequeteAmount = Object.values(eventData.requetes)
       .flat()
-      .reduce((sum, req) => sum + (String(req.id) === String(requeteId) ? amount : req.amount), 0);
+      .reduce((sum, req) => sum + (req.id === requeteId ? amount : req.amount), 0);
 
     if (totalRequeteAmount > eventData.budget) {
       alert(`Cannot update requete amount to $${amount.toFixed(2)}. Total requete amount ($${totalRequeteAmount.toFixed(2)}) exceeds your event budget ($${eventData.budget.toFixed(2)}).`);
@@ -452,29 +338,29 @@ const toggleVendor = (vendor: Vendor) => {
       requetes: {
         ...prev.requetes,
         [vendorId]: prev.requetes[vendorId].map(r =>
-          String(r.id) === String(requeteId) ? { ...r, amount } : r
+          r.id === requeteId ? { ...r, amount } : r
         ),
       },
     }));
   };
 
-  const removeRequete = (vendorId: string, requeteId: string | number) => {
+  const removeRequete = (vendorId: string, requeteId: string) => {
     setEventData(prev => ({
       ...prev,
       requetes: {
         ...prev.requetes,
-        [vendorId]: prev.requetes[vendorId].filter(r => String(r.id) !== String(requeteId)),
+        [vendorId]: prev.requetes[vendorId].filter(r => r.id !== requeteId),
       },
     }));
   };
 
-  const toggleRequeteStatus = (vendorId: string, requeteId: string | number) => {
+  const toggleRequeteStatus = (vendorId: string, requeteId: string) => {
     setEventData(prev => ({
       ...prev,
       requetes: {
         ...prev.requetes,
         [vendorId]: prev.requetes[vendorId].map(r =>
-          String(r.id) === String(requeteId)
+          r.id === requeteId
             ? {
                 ...r,
                 status: r.status === 'Open'
@@ -491,72 +377,79 @@ const toggleVendor = (vendor: Vendor) => {
     }));
   };
 
-const handleSubmitEvent = async () => {
-  if (!eventData.basicInfo) {
-    alert('Please complete the basic event information');
-    return;
-  }
+  const handleSubmitEvent = async () => {
+    if (!eventData.basicInfo) {
+      alert('Please complete the basic event information');
+      return;
+    }
 
-  if (!currentUser?.id) {
-    alert('User not authenticated. Please log in.');
-    navigate('/login');
-    return;
-  }
+    if (!currentUser?.id) {
+      alert('User not authenticated. Please log in.');
+      navigate('/login');
+      return;
+    }
 
-  setIsCreating(true);
-  try {
-    const eventPayload = {
-      id: isEdit ? event.id : undefined,
-      user_id: currentUser.id,
-      title: eventData.basicInfo.title,
-      type_id: eventTypeMap[eventData.basicInfo.type.toLowerCase()],
-      date: eventData.basicInfo.date,
-      location: eventData.basicInfo.lieu,
-      image_banniere: eventData.image_banniere_url || '',
-      description: eventData.basicInfo.description || '',
-      expected_guests: eventData.basicInfo.expected_guests,
-      budget: eventData.budget,
-    };
-
-    console.log('Sending event payload:', eventPayload);
-
-    const eventResponse = await fetch('http://localhost/pfe/backend/src/api/events.php', {
-      method: isEdit ? 'PUT' : 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(eventPayload),
-    });
-
-    const responseText = await eventResponse.text();
-    console.log('Raw response:', responseText);
-
-    let eventResult;
+    setIsCreating(true);
     try {
-      eventResult = JSON.parse(responseText);
-    } catch (err) {
-      console.error('Failed to parse JSON:', err);
-      throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+      const requetesPayload = Object.values(eventData.requetes)
+        .flat()
+        .map(requete => ({
+          titre: requete.title,
+          description: requete.description,
+          date_limite: requete.date_limit,
+          statut: requete.status,
+          montant: requete.amount,
+          vendor_id: requete.vendor_id,
+        }));
+
+      const eventPayload = {
+        user_id: currentUser.id,
+        title: eventData.basicInfo.title,
+        type_id: eventTypeMap[eventData.basicInfo.type.toLowerCase()],
+        date: eventData.basicInfo.date,
+        location: eventData.basicInfo.lieu,
+        image_banniere: eventData.image_banniere_url || '',
+        description: eventData.basicInfo.description || '',
+        expected_guests: eventData.basicInfo.expected_guests,
+        budget: eventData.budget,
+        requetes: requetesPayload,
+      };
+
+      console.log('Sending event payload:', eventPayload);
+
+      const eventResponse = await fetch('http://localhost/pfe/backend/src/api/events.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(eventPayload),
+      });
+
+      const responseText = await eventResponse.text();
+      console.log('Raw response:', responseText);
+
+      let eventResult;
+      try {
+        eventResult = JSON.parse(responseText);
+      } catch (err) {
+        console.error('Failed to parse JSON:', err);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+      }
+
+      if (!eventResponse.ok || !eventResult.success) {
+        throw new Error(eventResult.message || 'Failed to create event');
+      }
+
+      alert('Event created successfully!');
+      navigate('/events');
+    } catch (error) {
+      console.error('Error creating event:', error);
+      alert(`Failed to create event: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsCreating(false);
     }
-
-    if (!eventResponse.ok || !eventResult.success) {
-      throw new Error(eventResult.message || 'Failed to save event');
-    }
-
-    const eventId = isEdit ? event.id : eventResult.id;
-
-    // ... rest of the requete submission logic ...
-
-    alert(isEdit ? 'Event updated successfully!' : 'Event created successfully!');
-    navigate('/events');
-  } catch (error) {
-    console.error('Error processing event:', error);
-    alert(`Failed to ${isEdit ? 'update' : 'create'} event: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    setIsCreating(false);
-  }
-};
+  };
 
   const renderStep = () => {
     switch (currentStep) {
@@ -565,8 +458,8 @@ const handleSubmitEvent = async () => {
           <form onSubmit={handleSubmit(handleBasicInfoSubmit)}>
             <Card>
               <CardHeader>
-                <h2 className="text-xl font-semibold text-gray-900">{isEdit ? 'Edit Event Information' : 'Basic Info'}</h2>
-                <p className="text-sm font-medium text-gray-500">{isEdit ? 'Update the essential details for your event' : 'Let\'s start with the essential details'}</p>
+                <h2 className="text-xl font-semibold text-gray-900">Basic Info</h2>
+                <p className="text-sm font-medium text-gray-500">Let's start with the essential details</p>
               </CardHeader>
               <CardContent className="event">
                 <Input
@@ -754,8 +647,6 @@ const handleSubmitEvent = async () => {
                             : 'border-gray-200 opacity-50 cursor-not-allowed'
                         }`}
                         onClick={() => isAffordable && canSelectVendors && toggleVendor(vendor)}
-                        data-vendor-id={vendor.id}
-                        data-vendor-selected={isSelected}
                       >
                         <div className="flex items-start">
                           <img
@@ -850,7 +741,7 @@ const handleSubmitEvent = async () => {
                         <div className="flex items-center space-x-2">
                           <select
                             value={requete.status}
-                            onChange={() => toggleRequeteStatus(vendor.id, requete.id!)}
+                            onChange={() => toggleRequeteStatus(vendor.id, requete.id)}
                             className="rounded-md border-gray-300 text-sm"
                           >
                             <option value="Open">Open</option>
@@ -863,12 +754,12 @@ const handleSubmitEvent = async () => {
                             type="number"
                             placeholder="Amount"
                             value={requete.amount}
-                            onChange={(e) => updateRequeteAmount(vendor.id, requete.id!, parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updateRequeteAmount(vendor.id, requete.id, parseFloat(e.target.value) || 0)}
                             className="w-24"
                           />
                         </div>
                         <button
-                          onClick={() => removeRequete(vendor.id, requete.id!)}
+                          onClick={() => removeRequete(vendor.id, requete.id)}
                           className="text-gray-400 hover:text-red-600"
                         >
                           <X size={16} />
@@ -895,6 +786,8 @@ const handleSubmitEvent = async () => {
                             addRequete(vendor.id, input.value, parseFloat(amountInput.value) || 0);
                             input.value = '';
                             amountInput.value = '';
+                          } else {
+                            alert('Please provide both a title and an amount for the requete.');
                           }
                         }}
                       >
@@ -1021,7 +914,7 @@ const handleSubmitEvent = async () => {
                     rightIcon={<Check />}
                     className="ml-auto"
                   >
-                    {isCreating ? (isEdit ? 'Updating Event...' : 'Creating Event...') : (isEdit ? 'Update Event' : 'Create Event')}
+                    {isCreating ? 'Creating Event...' : 'Create Event'}
                   </Button>
                 </div>
               </div>
@@ -1036,10 +929,8 @@ const handleSubmitEvent = async () => {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <div className="mb-8">
-        <h2 className="text-3xl font-semibold">{isEdit ? 'Edit Event' : 'Create New Event'}</h2>
-        <p className="mt-2 text-sm text-gray-500">
-          {isEdit ? 'Modify the details below to update your event' : 'Fill in the details to create your new event'}
-        </p>
+        <h2 className="text-3xl font-semibold">Create New Event</h2>
+        <p className="mt-2 text-sm text-gray-500">Fill in the details to create your new event</p>
       </div>
       <div className="mb-8">
         <div className="relative flex justify-between items-center">

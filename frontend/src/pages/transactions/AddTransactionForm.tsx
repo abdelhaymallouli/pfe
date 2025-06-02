@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardContent } from '../../components/ui/Card';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Event {
   id: string;
@@ -45,6 +46,7 @@ const transactionSchema = z.object({
 type TransactionFormValues = z.infer<typeof transactionSchema>;
 
 export const AddTransactionForm = () => {
+  const { currentUser } = useAuth(); // Get currentUser
   const navigate = useNavigate();
   const {
     register,
@@ -74,7 +76,6 @@ export const AddTransactionForm = () => {
   const eventId = watch('eventId');
   const vendorId = watch('vendorId');
 
-  // Debug form state and errors
   useEffect(() => {
     console.log('Form state:', { eventId, vendorId, errors, isSubmitting });
   }, [eventId, vendorId, errors, isSubmitting]);
@@ -83,13 +84,20 @@ export const AddTransactionForm = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const eventsResponse = await fetch('http://localhost/pfe/backend/src/api/events.php');
+        // Check if user is logged in
+        if (!currentUser?.id) {
+          throw new Error('You must be logged in to add a transaction.');
+        }
+
+        // Fetch events for the current user
+        const eventsResponse = await fetch(`http://localhost/pfe/backend/src/api/events.php?userId=${currentUser.id}`);
         if (!eventsResponse.ok) {
           const text = await eventsResponse.text();
           console.error('Events response status:', eventsResponse.status, 'Raw response:', text);
           throw new Error(`HTTP error while fetching events! status: ${eventsResponse.status}`);
         }
         const eventsData = await eventsResponse.json();
+        console.log('Events API response:', eventsData);
         if (!eventsData.success || !Array.isArray(eventsData.data)) {
           throw new Error(eventsData.message || 'Invalid events response');
         }
@@ -102,6 +110,7 @@ export const AddTransactionForm = () => {
           }))
         );
 
+        // Fetch vendors
         const vendorsResponse = await fetch('http://localhost/pfe/backend/src/api/vendor.php');
         if (!vendorsResponse.ok) {
           const text = await vendorsResponse.text();
@@ -109,6 +118,7 @@ export const AddTransactionForm = () => {
           throw new Error(`HTTP error while fetching vendors! status: ${vendorsResponse.status}`);
         }
         const vendorsData = await vendorsResponse.json();
+        console.log('Vendors API response:', vendorsData);
         if (!Array.isArray(vendorsData)) {
           throw new Error('Invalid vendors response');
         }
@@ -128,7 +138,7 @@ export const AddTransactionForm = () => {
     };
 
     fetchData();
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     console.log('Event ID changed:', eventId);
@@ -217,6 +227,10 @@ export const AddTransactionForm = () => {
     console.log('onSubmit triggered with data:', data);
     console.log('Derived values:', { vendorPrice, selectedEventType, montant: vendorPrice ?? data.amount ?? 0 });
     try {
+      if (!currentUser?.id) {
+        throw new Error('You must be logged in to add a transaction.');
+      }
+
       const montant = vendorPrice ?? data.amount ?? 0;
       if (montant <= 0) {
         console.error('Amount validation failed:', { vendorPrice, dataAmount: data.amount });
@@ -232,6 +246,7 @@ export const AddTransactionForm = () => {
         date_limite: data.dueDate || null,
         statut: 'Open',
         vendor_id: data.vendorId,
+        user_id: currentUser.id, // Add user_id to the payload
       };
       console.log('Sending request to requetes.php:', requestData);
 
@@ -263,18 +278,21 @@ export const AddTransactionForm = () => {
     }
   };
 
-  // Fallback submit handler for debugging
   const handleFormSubmit = (e: React.FormEvent) => {
     console.log('Form submit event triggered');
     handleSubmit(onSubmit)(e);
   };
 
-  if (!events.length || !vendors.length) {
-    return <div className="text-red-600">Error: No events or vendors available. Please check the backend.</div>;
-  }
-
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (!events.length || !vendors.length) {
+    return (
+      <div className="text-red-600">
+        Error: No {events.length ? '' : 'events'} {events.length && !vendors.length ? 'or' : ''} {vendors.length ? '' : 'vendors'} available. Please check the backend or ensure you have events and vendors set up.
+      </div>
+    );
   }
 
   console.log('Rendering form, errors:', errors);

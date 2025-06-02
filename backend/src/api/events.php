@@ -37,10 +37,9 @@ try {
             exit;
         }
 
-        // Handle user-specific events
         if (isset($_GET['userId']) && is_numeric($_GET['userId'])) {
             $userId = (int)$_GET['userId'];
-            $events = $controller->getEventsByUserId($userId); // New method to filter by user
+            $events = $controller->getEventsByUserId($userId);
             ob_clean();
             http_response_code(200);
             echo json_encode([
@@ -135,8 +134,6 @@ try {
 
     if ($method === 'PUT') {
         $rawInput = file_get_contents('php://input');
-        error_log("Raw PUT input: " . $rawInput);
-        
         $input = json_decode($rawInput, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             ob_clean();
@@ -148,28 +145,14 @@ try {
             exit;
         }
 
-        error_log("Parsed PUT input: " . json_encode($input));
-
-        $required = ['id', 'user_id', 'title', 'type_id', 'date', 'location', 'expected_guests'];
-        foreach ($required as $field) {
-            if (!isset($input[$field])) {
-                ob_clean();
-                http_response_code(400);
-                echo json_encode([
-                    'success' => false,
-                    'message' => "Field '$field' is missing"
-                ], JSON_THROW_ON_ERROR);
-                exit;
-            }
-            if (in_array($field, ['title', 'location']) && is_string($input[$field]) && empty(trim($input[$field]))) {
-                ob_clean();
-                http_response_code(400);
-                echo json_encode([
-                    'success' => false,
-                    'message' => "Field '$field' cannot be empty"
-                ], JSON_THROW_ON_ERROR);
-                exit;
-            }
+        if (!isset($input['id']) || !is_numeric($input['id'])) {
+            ob_clean();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Event ID is required and must be numeric'
+            ], JSON_THROW_ON_ERROR);
+            exit;
         }
 
         try {
@@ -188,6 +171,38 @@ try {
             echo json_encode([
                 'success' => false,
                 'message' => 'Failed to update event: ' . $e->getMessage()
+            ], JSON_THROW_ON_ERROR);
+        }
+        exit;
+    }
+
+    if ($method === 'DELETE') {
+        if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+            ob_clean();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Event ID is required and must be numeric'
+            ], JSON_THROW_ON_ERROR);
+            exit;
+        }
+
+        try {
+            $controller->deleteEvent((int)$_GET['id']);
+            ob_clean();
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Event deleted successfully'
+            ], JSON_THROW_ON_ERROR);
+        } catch (Exception $e) {
+            error_log('Event deletion failed: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            ob_clean();
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to delete event: ' . $e->getMessage()
             ], JSON_THROW_ON_ERROR);
         }
         exit;

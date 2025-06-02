@@ -82,16 +82,6 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-
-      <Route
-        path="/events/:id/edit"
-        element={
-          <ProtectedRoute>
-            <EventForm />
-          </ProtectedRoute>
-        }
-      />
-
       <Route
         path="/vendors"
         element={
