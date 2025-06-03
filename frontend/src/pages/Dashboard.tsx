@@ -224,7 +224,7 @@ export const Dashboard = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-1 text-gray-600">
-          Welcome back, {currentUser?.email?.split('@')[0] || 'User'}! Here's what's happening with your events.
+          Welcome back, {currentUser?.username?.split('@')[0] || 'User'}! Here's what's happening with your events.
         </p>
       </div>
 
