@@ -15,7 +15,7 @@ import { VendorList } from './pages/vendors/VendorList';
 import { VendorDetails } from './pages/vendors/VendorDetails';
 import { TransactionTracker } from './pages/transactions/TransactionTracker';
 import { AddTransactionForm } from './pages/transactions/AddTransactionForm';
-import { AdminLogin } from './pages/Admin/AdminLogin';
+import { AdminLogin }  from './pages/Admin/AdminLogin';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
 import Profile from './pages/Profile';
 
@@ -126,8 +126,16 @@ function AppRoutes() {
         }
       />
 
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+        
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
       {/* Fallback route */}
       <Route path="*" element={<Navigate to="/" replace />} />

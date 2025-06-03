@@ -1,35 +1,34 @@
 <?php
 // backend/config/cors.php
 
-// Set allowed origins (adjust as needed)
-$allowedOrigins = ['http://localhost:5173'];
+$allowedOrigins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173', // Add both for safety
+];
 
-// Get the request's origin
-$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-// Check if the origin is allowed
 if (in_array($origin, $allowedOrigins)) {
     header("Access-Control-Allow-Origin: $origin");
+    header("Access-Control-Allow-Credentials: true");
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+    header("Access-Control-Max-Age: 86400");
+
+    // Handle preflight requests
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit;
+    }
 } else {
-    // Optionally allow all origins for development (less secure)
-    header("Access-Control-Allow-Origin: *");
-}
-
-// Allow specific methods, including PUT
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-
-// Allow specific headers
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
-// Allow credentials (if needed, e.g., for authenticated requests)
-header("Access-Control-Allow-Credentials: true");
-
-// Set max age for preflight request caching
-header("Access-Control-Max-Age: 86400");
-
-// Handle preflight OPTIONS request
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
+    // Reject disallowed origins
+    error_log("CORS: Origin $origin not allowed");
+    header('Content-Type: application/json');
+    http_response_code(403);
+    echo json_encode([
+        'status' => 'error',
+        'error' => 'CORS origin not allowed'
+    ]);
     exit;
 }
 ?>
