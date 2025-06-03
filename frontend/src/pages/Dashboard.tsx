@@ -19,22 +19,22 @@ import { toast } from 'react-hot-toast';
 interface Event {
   id: string;
   title: string;
-  event_date: string; // Changed from date
+  event_date: string; 
   location: string;
   status: string;
-  banner_image: string | null; // Changed from bannerImage
-  expected_guests: number; // Changed from expectedGuests
+  banner_image: string | null; 
+  expected_guests: number; 
   budget: number;
-  id_client: string; // Changed from user_id
+  id_client: string; 
 }
 
 interface Task {
   id: string;
   title: string;
-  deadline: string | null; // Changed from date_limite
-  status: string; // Changed from statut
+  deadline: string | null; 
+  status: string; 
   event_id: string;
-  amount: number | null; // Changed from transaction_montant
+  amount: number | null; 
   vendor_name: string | null;
 }
 interface DashboardStats {
@@ -224,7 +224,7 @@ export const Dashboard = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-1 text-gray-600">
-          Welcome back, {currentUser?.email?.split('@')[0] || 'User'}! Here's what's happening with your events.
+          Welcome back, {currentUser?.username?.split('@')[0] || 'User'}! Here's what's happening with your events.
         </p>
       </div>
 
