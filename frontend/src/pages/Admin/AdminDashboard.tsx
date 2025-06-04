@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 
 interface Client { id_client: string; nom: string; email: string; }
 interface Event { id_event: string; title: string; date: string; lieu: string; statut: string; budget: string | number | null; }
-interface Vendor { id_vendor: string; nom: string; email: string; phone: string | null; note: number | null; }
+interface Vendor { id_vendor: string; nom: string; email: string; phone: string | null; note: number | string | null; }
 interface Requete { id_requete: string; titre: string; statut: string; id_event: string; }
 interface Transaction { id_transaction: string; montant: string | number; date: string; id_event: string; }
 interface Type { id_type: string; name: string; }
@@ -21,45 +21,89 @@ export const AdminDashboard = () => {
         requests: Requete[];
         transactions: Transaction[];
         types: Type[];
+        page: number;
+        limit: number;
     }>({
-        clients: [], events: [], vendors: [], requests: [], transactions: [], types: []
+        clients: [], events: [], vendors: [], requests: [], transactions: [], types: [], page: 1, limit: 10
     });
     const [newVendor, setNewVendor] = useState({ nom: '', email: '', phone: '', note: '' });
     const [editVendor, setEditVendor] = useState<Vendor | null>(null);
+    const [filter, setFilter] = useState({ vendorName: '', eventTitle: '' });
+    const [sort, setSort] = useState({ field: 'nom', direction: 'asc' });
 
     useEffect(() => {
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            navigate('/admin/login');
+            return;
+        }
+
         const fetchData = async () => {
             try {
-                const response = await fetch('http://localhost/pfe/backend/src/api/admin.php');
+                const response = await fetch(`http://localhost/pfe/backend/src/api/admin.php?action=dashboard&page=${data.page}&limit=${data.limit}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Failed to load data');
-                setData(result.data);
-            } catch (error) {
+                const processedVendors = result.data.vendors.map((vendor: Vendor) => ({
+                    ...vendor,
+                    note: vendor.note != null ? parseFloat(vendor.note as string) : null
+                }));
+                setData({ ...result.data, vendors: processedVendors, page: result.page, limit: result.limit });
+            } catch (error: any) {
                 toast.error(error.message || 'Failed to load dashboard');
+                if (error.message.includes('Unauthorized')) {
+                    navigate('/admin/login');
+                }
             }
         };
         fetchData();
-    }, []);
+    }, [data.page, data.limit, navigate]);
+
+    const validateVendorInput = () => {
+        if (!newVendor.nom || !newVendor.email) {
+            toast.error('Name and email are required');
+            return false;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newVendor.email)) {
+            toast.error('Invalid email format');
+            return false;
+        }
+        if (newVendor.note && (parseFloat(newVendor.note) < 0 || parseFloat(newVendor.note) > 5)) {
+            toast.error('Rating must be between 0 and 5');
+            return false;
+        }
+        return true;
+    };
 
     const handleAddVendor = async () => {
+        if (!validateVendorInput()) return;
         try {
+            const token = localStorage.getItem('adminToken');
             const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=add_vendor', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     ...newVendor,
                     note: newVendor.note ? parseFloat(newVendor.note) : null
                 }),
             });
             const result = await response.json();
-            if (!response.ok) throw new Error(result.message);
+            if (!response.ok) throw new Error(result.message || 'Failed to add vendor');
             setData({
                 ...data,
                 vendors: [...data.vendors, { id_vendor: result.data.id_vendor, ...newVendor, note: newVendor.note ? parseFloat(newVendor.note) : null, phone: newVendor.phone || null }]
             });
             setNewVendor({ nom: '', email: '', phone: '', note: '' });
             toast.success('Vendor added');
-        } catch (error) {
+        } catch (error: any) {
             toast.error(error.message || 'Failed to add vendor');
         }
     };
@@ -70,19 +114,22 @@ export const AdminDashboard = () => {
     };
 
     const handleUpdateVendor = async () => {
-        if (!editVendor) return;
+        if (!editVendor || !validateVendorInput()) return;
         try {
-            const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=update_vendor', {
+            const token = localStorage.getItem('adminToken');
+            const response = await fetch(`http://localhost/pfe/backend/src/api/admin.php?action=update_vendor&id_vendor=${editVendor.id_vendor}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
-                    id_vendor: editVendor.id_vendor,
                     ...newVendor,
                     note: newVendor.note ? parseFloat(newVendor.note) : null
                 }),
             });
             const result = await response.json();
-            if (!response.ok) throw new Error(result.message);
+            if (!response.ok) throw new Error(result.message || 'Failed to update vendor');
             setData({
                 ...data,
                 vendors: data.vendors.map(v => v.id_vendor === editVendor.id_vendor ? { ...v, ...newVendor, note: newVendor.note ? parseFloat(newVendor.note) : null, phone: newVendor.phone || null } : v)
@@ -90,38 +137,58 @@ export const AdminDashboard = () => {
             setEditVendor(null);
             setNewVendor({ nom: '', email: '', phone: '', note: '' });
             toast.success('Vendor updated');
-        } catch (error) {
+        } catch (error: any) {
             toast.error(error.message || 'Failed to update vendor');
         }
     };
 
     const handleDeleteVendor = async (id_vendor: string) => {
         try {
+            const token = localStorage.getItem('adminToken');
             const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=delete_vendor', {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ id_vendor }),
             });
             const result = await response.json();
-            if (!response.ok) throw new Error(result.message);
+            if (!response.ok) throw new Error(result.message || 'Failed to delete vendor');
             setData({
                 ...data,
                 vendors: data.vendors.filter(v => v.id_vendor !== id_vendor)
             });
             toast.success('Vendor deleted');
-        } catch (error) {
+        } catch (error: any) {
             toast.error(error.message || 'Failed to delete vendor');
         }
     };
 
-    // Helper function to format budget
+    const handleSort = (field: string) => {
+        setSort({
+            field,
+            direction: sort.field === field && sort.direction === 'asc' ? 'desc' : 'asc'
+        });
+    };
+
+    const sortedVendors = [...data.vendors].sort((a, b) => {
+        const aValue = a[sort.field as keyof Vendor] || '';
+        const bValue = b[sort.field as keyof Vendor] || '';
+        return sort.direction === 'asc'
+            ? String(aValue).localeCompare(String(bValue))
+            : String(bValue).localeCompare(String(aValue));
+    });
+
+    const filteredVendors = sortedVendors.filter(v => v.nom.toLowerCase().includes(filter.vendorName.toLowerCase()));
+    const filteredEvents = data.events.filter(e => e.title.toLowerCase().includes(filter.eventTitle.toLowerCase()));
+
     const formatBudget = (budget: string | number | null): string => {
         if (budget == null) return 'N/A';
         const num = typeof budget === 'string' ? parseFloat(budget) : budget;
         return isNaN(num) ? 'N/A' : `$${num.toFixed(2)}`;
     };
 
-    // Helper function to format montant
     const formatMontant = (montant: string | number): string => {
         const num = typeof montant === 'string' ? parseFloat(montant) : montant;
         return isNaN(num) ? 'N/A' : `$${num.toFixed(2)}`;
@@ -155,6 +222,8 @@ export const AdminDashboard = () => {
                             placeholder="Rating (0-5)"
                             type="number"
                             step="0.1"
+                            min="0"
+                            max="5"
                             value={newVendor.note}
                             onChange={e => setNewVendor({ ...newVendor, note: e.target.value })}
                         />
@@ -169,23 +238,33 @@ export const AdminDashboard = () => {
                             <Button onClick={handleAddVendor}>Add Vendor</Button>
                         )}
                     </div>
+                    <Input
+                        placeholder="Filter by vendor name"
+                        value={filter.vendorName}
+                        onChange={e => setFilter({ ...filter, vendorName: e.target.value })}
+                        className="mb-4"
+                    />
                     <table className="min-w-full">
                         <thead>
                             <tr>
-                                <th className="text-left">Name</th>
-                                <th className="text-left">Email</th>
+                                <th className="text-left cursor-pointer" onClick={() => handleSort('nom')}>Name {sort.field === 'nom' && (sort.direction === 'asc' ? '↑' : '↓')}</th>
+                                <th className="text-left cursor-pointer" onClick={() => handleSort('email')}>Email {sort.field === 'email' && (sort.direction === 'asc' ? '↑' : '↓')}</th>
                                 <th className="text-left">Phone</th>
-                                <th className="text-left">Rating</th>
+                                <th className="text-left cursor-pointer" onClick={() => handleSort('note')}>Rating {sort.field === 'note' && (sort.direction === 'asc' ? '↑' : '↓')}</th>
                                 <th className="text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {data.vendors.map(vendor => (
+                            {filteredVendors.map(vendor => (
                                 <tr key={vendor.id_vendor}>
                                     <td>{vendor.nom}</td>
                                     <td>{vendor.email}</td>
                                     <td>{vendor.phone || 'N/A'}</td>
-                                    <td>{vendor.note || 'N/A'}</td>
+                                    <td>
+                                        {vendor.note != null && !isNaN(Number(vendor.note))
+                                            ? Number(vendor.note).toFixed(1)
+                                            : 'N/A'}
+                                    </td>
                                     <td className="text-right">
                                         <Button variant="ghost" size="sm" onClick={() => handleEditVendor(vendor)}>Edit</Button>
                                         <Button variant="ghost" size="sm" onClick={() => handleDeleteVendor(vendor.id_vendor)}>Delete</Button>
@@ -194,10 +273,56 @@ export const AdminDashboard = () => {
                             ))}
                         </tbody>
                     </table>
+                    <div className="flex gap-4 mt-4">
+                        <Button disabled={data.page === 1} onClick={() => setData({ ...data, page: data.page - 1 })}>Previous</Button>
+                        <span>Page {data.page}</span>
+                        <Button onClick={() => setData({ ...data, page: data.page + 1 })}>Next</Button>
+                    </div>
                 </CardContent>
             </Card>
 
-            {/* Clients */}
+            {/* Events */}
+            <Card className="mb-8">
+                <CardHeader>Events</CardHeader>
+                <CardContent>
+                    <Input
+                        placeholder="Filter by event title"
+                        value={filter.eventTitle}
+                        onChange={e => setFilter({ ...filter, eventTitle: e.target.value })}
+                        className="mb-4"
+                    />
+                    <table className="min-w-full">
+                        <thead>
+                            <tr>
+                                <th className="text-left">Title</th>
+                                <th className="text-left">Date</th>
+                                <th className="text-left">Location</th>
+                                <th className="text-left">Status</th>
+                                <th className="text-left">Budget</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredEvents.map(event => (
+                                <tr key={event.id_event}>
+                                    <td>{event.title}</td>
+                                    <td>{new Date(event.date).toLocaleDateString()}</td>
+                                    <td>{event.lieu || 'N/A'}</td>
+                                    <td>{event.statut}</td>
+                                    <td>{formatBudget(event.budget)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    <div className="flex gap-4 mt-4">
+                        <Button disabled={data.page === 1} onClick={() => setData({ ...data, page: data.page - 1 })}>Previous</Button>
+                        <span>Page {data.page}</span>
+                        <Button onClick={() => setData({ ...data, page: data.page + 1 })}>Next</Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Clients, Requests, Transactions, Types */}
+            {/* Similar pagination and filtering can be added here if needed */}
             <Card className="mb-8">
                 <CardHeader>Clients</CardHeader>
                 <CardContent>
@@ -220,36 +345,6 @@ export const AdminDashboard = () => {
                 </CardContent>
             </Card>
 
-            {/* Events */}
-            <Card className="mb-8">
-                <CardHeader>Events</CardHeader>
-                <CardContent>
-                    <table className="min-w-full">
-                        <thead>
-                            <tr>
-                                <th className="text-left">Title</th>
-                                <th className="text-left">Date</th>
-                                <th className="text-left">Location</th>
-                                <th className="text-left">Status</th>
-                                <th className="text-left">Budget</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.events.map(event => (
-                                <tr key={event.id_event}>
-                                    <td>{event.title}</td>
-                                    <td>{new Date(event.date).toLocaleDateString()}</td>
-                                    <td>{event.lieu || 'N/A'}</td>
-                                    <td>{event.statut}</td>
-                                    <td>{formatBudget(event.budget)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </CardContent>
-            </Card>
-
-            {/* Requests */}
             <Card className="mb-8">
                 <CardHeader>Requests</CardHeader>
                 <CardContent>
@@ -274,7 +369,6 @@ export const AdminDashboard = () => {
                 </CardContent>
             </Card>
 
-            {/* Transactions */}
             <Card className="mb-8">
                 <CardHeader>Transactions</CardHeader>
                 <CardContent>
@@ -299,7 +393,6 @@ export const AdminDashboard = () => {
                 </CardContent>
             </Card>
 
-            {/* Types */}
             <Card>
                 <CardHeader>Event Types</CardHeader>
                 <CardContent>

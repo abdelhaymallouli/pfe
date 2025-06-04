@@ -1,35 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardContent } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
 import { toast } from 'react-hot-toast';
-
-interface Admin {
-    id_admin: string;
-    nom: string;
-    email: string;
-}
 
 export const AdminLogin = () => {
     const navigate = useNavigate();
-    const [admins, setAdmins] = useState<Admin[]>([]);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
-    useEffect(() => {
-        const fetchAdmins = async () => {
-            try {
-                const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=get_admins');
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message || 'Failed to load admins');
-                setAdmins(result.data);
-            } catch (error) {
-                toast.error(error.message || 'Failed to load admins');
-            }
-        };
-        fetchAdmins();
-    }, []);
-
-    const handleEnter = () => {
-        navigate('/admin/dashboard');
+    const handleLogin = async () => {
+        if (!email || !password) {
+            toast.error('Email and password are required');
+            return;
+        }
+        try {
+            const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Login failed');
+            localStorage.setItem('adminToken', result.token);
+            toast.success('Login successful');
+            navigate('/admin/dashboard');
+        } catch (error: any) {
+            toast.error(error.message || 'Login failed');
+        }
     };
 
     return (
@@ -41,21 +40,22 @@ export const AdminLogin = () => {
                 </CardHeader>
                 <CardContent>
                     <div className="mb-4">
-                        <p className="text-sm font-medium text-gray-700">Available Admins:</p>
-                        {admins.length > 0 ? (
-                            <ul className="mt-2">
-                                {admins.map(admin => (
-                                    <li key={admin.id_admin} className="text-sm text-gray-600">
-                                        {admin.nom} ({admin.email})
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p className="text-sm text-gray-500">No admins found.</p>
-                        )}
+                        <Input
+                            placeholder="Email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            className="mb-2"
+                        />
+                        <Input
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            className="mb-2"
+                        />
                     </div>
-                    <Button onClick={handleEnter} className="w-full">
-                        Enter Dashboard
+                    <Button onClick={handleLogin} className="w-full">
+                        Login
                     </Button>
                 </CardContent>
             </Card>

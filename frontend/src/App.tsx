@@ -1,9 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Navbar } from './components/navigation/Navbar';
 import { Footer } from './components/navigation/Footer';
+
 import { Landing } from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -15,16 +16,15 @@ import { VendorList } from './pages/vendors/VendorList';
 import { VendorDetails } from './pages/vendors/VendorDetails';
 import { TransactionTracker } from './pages/transactions/TransactionTracker';
 import { AddTransactionForm } from './pages/transactions/AddTransactionForm';
-import { AdminLogin }  from './pages/Admin/AdminLogin';
+import { AdminLogin } from './pages/Admin/AdminLogin';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
 import Profile from './pages/Profile';
 
-// Protected route component
+// ✅ Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
-    // Display a loading spinner while checking auth status
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -32,149 +32,71 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  return currentUser ? (
-    <>{children}</>
-  ) : (
-    <Navigate to="/login" replace />
-  );
+  return currentUser ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-function AppRoutes() {
-  return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Signup />} />
+// ✅ User Routes with Navbar & Footer
+const UserLayout = () => (
+  <>
+    <Navbar />
+    <main className="min-h-screen">
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Signup />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/events" element={<ProtectedRoute><EventList /></ProtectedRoute>} />
+        <Route path="/events/new" element={<ProtectedRoute><EventForm /></ProtectedRoute>} />
+        <Route path="/events/:id" element={<ProtectedRoute><EventDetails /></ProtectedRoute>} />
+        <Route path="/vendors" element={<ProtectedRoute><VendorList /></ProtectedRoute>} />
+        <Route path="/vendors/:id" element={<ProtectedRoute><VendorDetails /></ProtectedRoute>} />
+        <Route path="/transactions" element={<ProtectedRoute><TransactionTracker /></ProtectedRoute>} />
+        <Route path="/transactions/new" element={<ProtectedRoute><AddTransactionForm /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </main>
+    <Footer />
+  </>
+);
 
-      {/* Protected routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
+// ✅ Admin Routes without Navbar/Footer
+const AdminRoutes = () => (
+  <Routes>
+    <Route path="/admin/login" element={<AdminLogin />} />
+    <Route path="/admin/dashboard" element={<AdminDashboard />} />
+    <Route path="*" element={<Navigate to="/admin/login" replace />} />
+  </Routes>
+);
 
-      <Route
-        path="/events"
-        element={
-          <ProtectedRoute>
-            <EventList />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/events/new"
-        element={
-          <ProtectedRoute>
-            <EventForm />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/events/:id"
-        element={
-          <ProtectedRoute>
-            <EventDetails />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/vendors"
-        element={
-          <ProtectedRoute>
-            <VendorList />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/vendors/:id"
-        element={
-          <ProtectedRoute>
-            <VendorDetails />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/transactions"
-        element={
-          <ProtectedRoute>
-            <TransactionTracker />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/transactions/new"
-        element={
-          <ProtectedRoute>
-            <AddTransactionForm />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/Profile"
-        element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/admin/dashboard"
-        element={
-          <ProtectedRoute>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
-        
-      <Route path="/admin/login" element={<AdminLogin />} />
-
-      {/* Fallback route */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-}
-
+// ✅ Main App
 function App() {
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith('/admin');
+
   return (
-    <Router>
-      <AuthProvider>
-        <Navbar />
-        <main className="min-h-screen">
-          <AppRoutes />
-        </main>
-        <Footer />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#fff',
-              color: '#333',
-            },
-            success: {
-              style: {
-                border: '1px solid #22c55e',
-              },
-            },
-            error: {
-              style: {
-                border: '1px solid #ef4444',
-              },
-            },
-          }}
-        />
-      </AuthProvider>
-    </Router>
+    <AuthProvider>
+      {isAdminPath ? <AdminRoutes /> : <UserLayout />}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#fff',
+            color: '#333',
+          },
+          success: { style: { border: '1px solid #22c55e' } },
+          error: { style: { border: '1px solid #ef4444' } },
+        }}
+      />
+    </AuthProvider>
   );
 }
 
-export default App;
+const AppWrapper = () => (
+  <Router>
+    <App />
+  </Router>
+);
+
+export default AppWrapper;
