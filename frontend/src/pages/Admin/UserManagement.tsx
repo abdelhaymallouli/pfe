@@ -1,0 +1,149 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Search, UserPlus, Edit, Trash2, RefreshCw } from 'lucide-react';
+
+interface User {
+  id_client: string;
+  name: string;
+  email: string;
+  // Add other user properties as needed
+}
+
+export const UserManagement = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchUsers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=getUsers'); // Assuming an admin API endpoint for users
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      if (data.success) {
+        setUsers(data.data);
+      } else {
+        toast.error(data.message || 'Failed to load users');
+      }
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      toast.error(error.message || 'Failed to load users');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleEditUser = (userId: string) => {
+    // Implement edit functionality, e.g., navigate to an edit user page or open a modal
+    toast.info(`Edit user with ID: ${userId}`);
+    console.log('Edit user', userId);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm(`Are you sure you want to delete user ${userId}?`)) {
+      return;
+    }
+    try {
+      const response = await fetch(`http://localhost/pfe/backend/src/api/admin.php?action=deleteUser&id_client=${userId}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('User deleted successfully');
+        fetchUsers(); // Refresh the list
+      } else {
+        toast.error(data.message || 'Failed to delete user');
+      }
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(error.message || 'Failed to delete user');
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading Users...</div>;
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+          <p className="mt-1 text-sm text-gray-500">Manage client accounts and user data</p>
+        </div>
+        <div className="flex space-x-4">
+          <Button leftIcon={<UserPlus size={20} />}>Add New User</Button>
+          <Button variant="outline" onClick={fetchUsers} leftIcon={<RefreshCw size={16} />}>
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      <div className="relative flex-1 mb-6">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+        <Input
+          type="text"
+          placeholder="Search users by name or email..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All Users</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filteredUsers.length === 0 ? (
+            <p className="text-center text-gray-500">No users found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredUsers.map(user => (
+                    <tr key={user.id_client}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditUser(user.id_client)} leftIcon={<Edit size={16} />}>
+                          Edit
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteUser(user.id_client)} leftIcon={<Trash2 size={16} />} className="text-red-600 hover:text-red-900">
+                          Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+

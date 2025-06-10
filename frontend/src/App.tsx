@@ -18,6 +18,11 @@ import { TransactionTracker } from './pages/transactions/TransactionTracker';
 import { AddTransactionForm } from './pages/transactions/AddTransactionForm';
 import { AdminLogin } from './pages/Admin/AdminLogin';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
+import { UserManagement } from './pages/Admin/UserManagement';
+import { EventManagement } from './pages/Admin/EventManagement';
+import { VendorManagement } from './pages/Admin/VendorManagement';
+import { CategoryManagement } from './pages/Admin/CategoryManagement';
+import { RequestManagement } from './pages/Admin/RequestManagement';
 import Profile from './pages/Profile';
 
 // ✅ Protected Route Wrapper
@@ -65,6 +70,11 @@ const AdminRoutes = () => (
   <Routes>
     <Route path="/admin/login" element={<AdminLogin />} />
     <Route path="/admin/dashboard" element={<AdminDashboard />} />
+    <Route path="/admin/users" element={<UserManagement />} />
+    <Route path="/admin/events" element={<EventManagement />} />
+    <Route path="/admin/vendors" element={<VendorManagement />} />
+    <Route path="/admin/categories" element={<CategoryManagement />} />
+    <Route path="/admin/requests" element={<RequestManagement />} />
     <Route path="*" element={<Navigate to="/admin/login" replace />} />
   </Routes>
 );
@@ -100,3 +110,4 @@ const AppWrapper = () => (
 );
 
 export default AppWrapper;
+
