@@ -65,4 +65,34 @@ class AdminController {
     public function deleteVendor($id_vendor) {
         return $this->model->deleteVendor($this->pdo, $id_vendor);
     }
+ // New methods for Client Management
+    public function getAllClients() {
+        return $this->model->getAllClients($this->pdo);
+    }
+
+    public function deleteClient($id_client) {
+        return $this->model->deleteClient($this->pdo, $id_client);
+    }
+
+    public function addClient($data) {
+        if (!isset($data['name']) || !isset($data['email']) || !isset($data['password'])) {
+            throw new Exception('Name, email, and password are required', 400);
+        }
+        $name = filter_var($data['name'], FILTER_SANITIZE_STRING);
+        $email = filter_var($data['email'], FILTER_SANITIZE_EMAIL);
+        $password = password_hash($data['password'], PASSWORD_DEFAULT);
+
+        return $this->model->addClient($this->pdo, $name, $email, $password);
+    }
+
+    public function updateClient($id_client, $data) {
+        if (!isset($data['name']) || !isset($data['email'])) {
+            throw new Exception('Name and email are required', 400);
+        }
+        $name = filter_var($data['name'], FILTER_SANITIZE_STRING);
+        $email = filter_var($data['email'], FILTER_SANITIZE_EMAIL);
+        $password = isset($data['password']) ? password_hash($data['password'], PASSWORD_DEFAULT) : null;
+
+        return $this->model->updateClient($this->pdo, $id_client, $name, $email, $password);
+    }
 }

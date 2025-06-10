@@ -1,9 +1,13 @@
 <?php
 // backend/src/api/admin.php
-require_once __DIR__ . '/../../config/cors.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../controllers/AdminController.php';
-require_once __DIR__ . '/../../config/auth_config.php';
+require_once __DIR__ . 
+'/../../config/cors.php';
+require_once __DIR__ . 
+'/../../config/database.php';
+require_once __DIR__ . 
+'/../controllers/AdminController.php';
+require_once __DIR__ . 
+'/../../config/auth_config.php';
 
 // Start output buffering
 ob_start();
@@ -61,6 +65,10 @@ try {
             $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 10;
             $data = $controller->getDashboardData($page, $limit);
             echo json_encode(['success' => true, 'data' => $data, 'page' => $page, 'limit' => $limit]);
+            exit;
+        } elseif (isset($_GET['action']) && $_GET['action'] === 'getUsers') {
+            $data = $controller->getAllClients();
+            echo json_encode(['success' => true, 'data' => $data]);
             exit;
         } else {
             http_response_code(400);
@@ -124,6 +132,37 @@ try {
         }
         $controller->deleteVendor($input['id_vendor']);
         echo json_encode(['success' => true, 'message' => 'Vendor deleted']);
+        exit;
+    }
+
+    // New routes for Client Management
+    if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'addClient') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('Invalid JSON input: ' . json_last_error_msg());
+        }
+        $id = $controller->addClient($input);
+        http_response_code(201);
+        echo json_encode(['success' => true, 'data' => ['id_client' => $id]]);
+        exit;
+    }
+
+    if ($method === 'PUT' && isset($_GET['action']) && $_GET['action'] === 'updateClient') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (json_last_error() !== JSON_ERROR_NONE || !isset($_GET['id_client'])) {
+            throw new Exception('Invalid JSON input or id_client required');
+        }
+        $controller->updateClient($_GET['id_client'], $input);
+        echo json_encode(['success' => true, 'message' => 'Client updated']);
+        exit;
+    }
+
+    if ($method === 'DELETE' && isset($_GET['action']) && $_GET['action'] === 'deleteClient') {
+        if (!isset($_GET['id_client'])) {
+            throw new Exception('id_client required');
+        }
+        $controller->deleteClient($_GET['id_client']);
+        echo json_encode(['success' => true, 'message' => 'Client deleted']);
         exit;
     }
 
