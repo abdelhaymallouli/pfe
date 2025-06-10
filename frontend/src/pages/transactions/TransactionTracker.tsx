@@ -95,7 +95,7 @@ const fetchEventsAndRequetes = useCallback(async () => {
               status: ['Open', 'Under Consideration', 'Completed', 'Cancelled'].includes(req.status)
                 ? req.status
                 : 'Open',
-              transaction_montant: req.amount != null ? parseFloat(req.amount) : null,
+              amount: req.amount != null ? parseFloat(req.amount) : null,
               transaction_date: req.transaction_date || null,
             }))
           : [];
@@ -148,13 +148,13 @@ const retryFetchEvent = async (eventId: string) => {
     const requetes = Array.isArray(requetesData.data)
       ? requetesData.data.map((req: any) => ({
           id: String(req.id_request || req.id || ''), // Ensure valid ID
-          titre: req.title || 'Untitled',
+          title: req.title || 'Untitled',
           description: req.description || null,
           date_limite: req.deadline || null,
           status: ['Open', 'Under Consideration', 'Completed', 'Cancelled'].includes(req.status)
             ? req.status
             : 'Open',
-          transaction_montant: req.amount != null ? parseFloat(req.amount) : null,
+          amount: req.amount != null ? parseFloat(req.amount) : null,
           transaction_date: req.transaction_date || null,
         }))
       : [];

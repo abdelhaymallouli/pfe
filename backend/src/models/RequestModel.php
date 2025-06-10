@@ -73,7 +73,7 @@ class RequestModel {
         }
     }
 
-    public function updateRequest($data) {
+        public function updateRequest($data) {
         try {
             $this->pdo->beginTransaction();
 
@@ -85,20 +85,41 @@ class RequestModel {
                 throw new Exception('Request not found');
             }
 
-            $sql = "UPDATE {$this->table} 
-                    SET title = :title, description = :description, deadline = :deadline, 
-                        status = :status, id_vendor = :id_vendor
-                    WHERE id_request = :id_request";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([
-                ':title' => $data['title'] ?? null,
-                ':description' => $data['description'] ?? null,
-                ':deadline' => $data['deadline'] ?? null,
-                ':status' => $data['status'] ?? 'Open',
-                ':id_vendor' => isset($data['id_vendor']) ? (int)$data['id_vendor'] : null,
-                ':id_request' => (int)$data['id_request']
-            ]);
+            $setClauses = [];
+            $params = [':id_request' => (int)$data['id_request']];
 
+            if (isset($data['title'])) {
+                $setClauses[] = 'title = :title';
+                $params[':title'] = $data['title'];
+            }
+            if (isset($data['description'])) {
+                $setClauses[] = 'description = :description';
+                $params[':description'] = $data['description'];
+            }
+            if (isset($data['deadline'])) {
+                $setClauses[] = 'deadline = :deadline';
+                $params[':deadline'] = $data['deadline'];
+            }
+            if (isset($data['status'])) {
+                $setClauses[] = 'status = :status';
+                $params[':status'] = $data['status'];
+            }
+            if (isset($data['id_vendor'])) {
+                $setClauses[] = 'id_vendor = :id_vendor';
+                $params[':id_vendor'] = (int)$data['id_vendor'];
+            }
+
+            if (empty($setClauses)) {
+                // No fields to update, commit and return success
+                $this->pdo->commit();
+                return true;
+            }
+
+            $sql = "UPDATE {$this->table} SET " . implode(', ', $setClauses) . " WHERE id_request = :id_request";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+
+            // Handle transaction amount update if present (existing logic)
             if (isset($data['amount'])) {
                 if ($request['id_transaction']) {
                     $sql = "UPDATE transaction 
@@ -141,6 +162,7 @@ class RequestModel {
             throw $e;
         }
     }
+
 
     public function deleteRequest(int $id_request, int $id_event) {
         try {
