@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Search, UserPlus, Edit, Trash2, RefreshCw } from 'lucide-react';
+import { Search, UserPlus, Edit, Trash2, RefreshCw, ArrowLeft } from 'lucide-react';
 
 interface User {
   id_client: string;
@@ -20,7 +21,18 @@ export const UserManagement = () => {
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=getUsers'); // Assuming an admin API endpoint for users
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        toast.error('Authentication token not found. Please log in again.');
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=getUsers', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
       }
@@ -43,8 +55,8 @@ export const UserManagement = () => {
   }, [fetchUsers]);
 
   const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleEditUser = (userId: string) => {
@@ -58,8 +70,16 @@ export const UserManagement = () => {
       return;
     }
     try {
-      const response = await fetch(`http://localhost/pfe/backend/src/api/admin.php?action=deleteUser&id_client=${userId}`, {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        toast.error('Authentication token not found. Please log in again.');
+        return;
+      }
+      const response = await fetch(`http://localhost/pfe/backend/src/api/admin.php?action=deleteClient&id_client=${userId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
       const data = await response.json();
       if (data.success) {
@@ -80,16 +100,25 @@ export const UserManagement = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage client accounts and user data</p>
-        </div>
-        <div className="flex space-x-4">
-          <Button leftIcon={<UserPlus size={20} />}>Add New User</Button>
-          <Button variant="outline" onClick={fetchUsers} leftIcon={<RefreshCw size={16} />}>
-            Refresh
+      <div className="flex items-center mb-6">
+        <Link to="/admin/dashboard" className="mr-4">
+          <Button variant="outline" leftIcon={<ArrowLeft size={20} />}>
+            Back to Dashboard
           </Button>
+        </Link>
+        <div className="flex-1">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+              <p className="mt-1 text-sm text-gray-500">Manage client accounts and user data</p>
+            </div>
+            <div className="flex space-x-4">
+              <Button leftIcon={<UserPlus size={20} />}>Add New User</Button>
+              <Button variant="outline" onClick={fetchUsers} leftIcon={<RefreshCw size={16} />}>
+                Refresh
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -145,5 +174,4 @@ export const UserManagement = () => {
     </div>
   );
 };
-
 

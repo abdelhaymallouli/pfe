@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Search, PlusCircle, Edit, Trash2, RefreshCw } from 'lucide-react';
+import { Search, PlusCircle, Edit, Trash2, RefreshCw, ArrowLeft } from 'lucide-react';
 
 interface Event {
   id_event: string;
@@ -23,7 +24,18 @@ export const EventManagement = () => {
   const fetchEvents = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=getEvents'); // Assuming an admin API endpoint for events
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        toast.error('Authentication token not found. Please log in again.');
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=getEvents', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch events: ${response.status} ${response.statusText}`);
       }
@@ -52,7 +64,7 @@ export const EventManagement = () => {
 
   const handleEditEvent = (eventId: string) => {
     // Implement edit functionality
-    //toast.info(`Edit event with ID: ${eventId}`);
+    toast.info(`Edit event with ID: ${eventId}`);
     console.log('Edit event', eventId);
   };
 
@@ -61,8 +73,16 @@ export const EventManagement = () => {
       return;
     }
     try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        toast.error('Authentication token not found. Please log in again.');
+        return;
+      }
       const response = await fetch(`http://localhost/pfe/backend/src/api/admin.php?action=deleteEvent&id_event=${eventId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
       const data = await response.json();
       if (data.success) {
@@ -83,16 +103,25 @@ export const EventManagement = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Event Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage all events on the platform</p>
-        </div>
-        <div className="flex space-x-4">
-          <Button leftIcon={<PlusCircle size={20} />}>Add New Event</Button>
-          <Button variant="outline" onClick={fetchEvents} leftIcon={<RefreshCw size={16} />}>
-            Refresh
+      <div className="flex items-center mb-6">
+        <Link to="/admin/dashboard" className="mr-4">
+          <Button variant="outline" leftIcon={<ArrowLeft size={20} />}>
+            Back to Dashboard
           </Button>
+        </Link>
+        <div className="flex-1">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Event Management</h1>
+              <p className="mt-1 text-sm text-gray-500">Manage all events on the platform</p>
+            </div>
+            <div className="flex space-x-4">
+              <Button leftIcon={<PlusCircle size={20} />}>Add New Event</Button>
+              <Button variant="outline" onClick={fetchEvents} leftIcon={<RefreshCw size={16} />}>
+                Refresh
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -150,5 +179,4 @@ export const EventManagement = () => {
     </div>
   );
 };
-
 

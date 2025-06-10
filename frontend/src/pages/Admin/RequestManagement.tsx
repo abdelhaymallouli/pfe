@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
-import { Search, RefreshCw, Eye, CheckCircle, XCircle } from 'lucide-react';
+import { Search, RefreshCw, Eye, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
 
 interface Request {
@@ -28,7 +29,17 @@ export const RequestManagement = () => {
   const fetchRequests = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=getRequests'); // Assuming an admin API endpoint for requests
+        const token = localStorage.getItem('adminToken');
+          if (!token) {
+            toast.error('Authentication token not found. Please log in again.');
+            setIsLoading(false);
+            return;
+          }
+      const response = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=getRequests', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }); // Assuming an admin API endpoint for requests
       if (!response.ok) {
         throw new Error(`Failed to fetch requests: ${response.status} ${response.statusText}`);
       }
@@ -69,10 +80,17 @@ export const RequestManagement = () => {
 
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
     try {
+        const token = localStorage.getItem('adminToken');
+          if (!token) {
+            toast.error('Authentication token not found. Please log in again.');
+            setIsLoading(false);
+            return;
+          }
       const response = await fetch(`http://localhost/pfe/backend/src/api/admin.php?action=updateRequestStatus`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ id_request: requestId, status: newStatus }),
       });
@@ -124,15 +142,24 @@ export const RequestManagement = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Request & Transaction Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Monitor and manage all service requests and transactions</p>
-        </div>
-        <div className="flex space-x-4">
-          <Button variant="outline" onClick={fetchRequests} leftIcon={<RefreshCw size={16} />}>
-            Refresh
+      <div className="flex items-center mb-6">
+        <Link to="/admin/dashboard" className="mr-4">
+          <Button variant="outline" leftIcon={<ArrowLeft size={20} />}>
+            Back to Dashboard
           </Button>
+        </Link>
+        <div className="flex-1">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Request & Transaction Management</h1>
+              <p className="mt-1 text-sm text-gray-500">Monitor and manage all service requests and transactions</p>
+            </div>
+            <div className="flex space-x-4">
+              <Button variant="outline" onClick={fetchRequests} leftIcon={<RefreshCw size={16} />}>
+                Refresh
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 

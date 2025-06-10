@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { Navbar } from './components/navigation/Navbar';
 import { Footer } from './components/navigation/Footer';
 
@@ -18,6 +19,8 @@ import { TransactionTracker } from './pages/transactions/TransactionTracker';
 import { AddTransactionForm } from './pages/transactions/AddTransactionForm';
 import { AdminLogin } from './pages/Admin/AdminLogin';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
+import AnalyticsDashboard from './pages/Admin/AnalyticsDashboard';
+import AdminSettings from './pages/Admin/AdminSettings';
 import { UserManagement } from './pages/Admin/UserManagement';
 import { EventManagement } from './pages/Admin/EventManagement';
 import { VendorManagement } from './pages/Admin/VendorManagement';
@@ -75,6 +78,8 @@ const AdminRoutes = () => (
     <Route path="/admin/vendors" element={<VendorManagement />} />
     <Route path="/admin/categories" element={<CategoryManagement />} />
     <Route path="/admin/requests" element={<RequestManagement />} />
+    <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+    <Route path="/admin/settings" element={<AdminSettings />} />
     <Route path="*" element={<Navigate to="/admin/login" replace />} />
   </Routes>
 );
@@ -105,7 +110,9 @@ function App() {
 
 const AppWrapper = () => (
   <Router>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </Router>
 );
 

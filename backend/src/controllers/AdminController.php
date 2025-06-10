@@ -1,6 +1,9 @@
 <?php
 // backend/src/controllers/AdminController.php
-require_once __DIR__ . '/../models/AdminModel.php';
+require_once __DIR__ . 
+'/../models/AdminModel.php';
+require_once __DIR__ . 
+'/../../config/auth_config.php';
 
 class AdminController {
     private $pdo;
@@ -29,49 +32,32 @@ class AdminController {
 
     public function login($email, $password) {
         $admin = $this->model->getAdminByEmail($this->pdo, $email);
-        if (!$admin || !password_verify(password: $password, hash: $admin['password'])) {
+        if (!$admin || !password_verify($password, $admin['password'])) {
             throw new Exception('Invalid email or password', 401);
         }
-        // Generate a simple token (replace with JWT or similar in production)
-        $token = bin2hex(random_bytes(16));
-        // Optionally store token in a sessions table
+
+        // Generate JWT token
+        $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
+        $payload = json_encode(['admin_id' => $admin['id_admin'], 'exp' => time() + JWT_EXPIRATION]);
+
+        $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
+        $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
+
+        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, JWT_SECRET, true);
+        $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
+
+        $token = $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
+
         return $token;
     }
 
-    public function addVendor($data) {
-        if (!isset($data['nom']) || !isset($data['email'])) {
-            throw new Exception('Name and email are required', 400);
-        }
-        $nom = filter_var($data['nom'], FILTER_SANITIZE_STRING);
-        $email = filter_var($data['email'], FILTER_SANITIZE_EMAIL);
-        $phone = isset($data['phone']) ? filter_var($data['phone'], FILTER_SANITIZE_STRING) : null;
-        $note = isset($data['note']) ? (float)$data['note'] : null;
-
-        return $this->model->addVendor($this->pdo, $nom, $email, $phone, $note);
-    }
-
-    public function updateVendor($id_vendor, $data) {
-        if (!isset($data['nom']) || !isset($data['email'])) {
-            throw new Exception('Name and email are required', 400);
-        }
-        $nom = filter_var($data['nom'], FILTER_SANITIZE_STRING);
-        $email = filter_var($data['email'], FILTER_SANITIZE_EMAIL);
-        $phone = isset($data['phone']) ? filter_var($data['phone'], FILTER_SANITIZE_STRING) : null;
-        $note = isset($data['note']) ? (float)$data['note'] : null;
-
-        return $this->model->updateVendor($this->pdo, $id_vendor, $nom, $email, $phone, $note);
-    }
-
-    public function deleteVendor($id_vendor) {
-        return $this->model->deleteVendor($this->pdo, $id_vendor);
-    }
- // New methods for Client Management
+    // Client Management
     public function getAllClients() {
         return $this->model->getAllClients($this->pdo);
     }
 
-    public function deleteClient($id_client) {
-        return $this->model->deleteClient($this->pdo, $id_client);
+    public function getClientById($id_client) {
+        return $this->model->getClientById($this->pdo, $id_client);
     }
 
     public function addClient($data) {
@@ -95,4 +81,197 @@ class AdminController {
 
         return $this->model->updateClient($this->pdo, $id_client, $name, $email, $password);
     }
+
+    public function deleteClient($id_client) {
+        return $this->model->deleteClient($this->pdo, $id_client);
+    }
+
+    // Event Management
+    public function getAllEvents() {
+        return $this->model->getAllEvents($this->pdo);
+    }
+
+    public function addEvent($data) {
+        $required = ['title', 'event_date', 'location', 'id_client', 'id_type'];
+        foreach ($required as $field) {
+            if (!isset($data[$field])) {
+                throw new Exception("$field is required", 400);
+            }
+        }
+
+        $title = filter_var($data['title'], FILTER_SANITIZE_STRING);
+        $event_date = $data['event_date'];
+        $location = filter_var($data['location'], FILTER_SANITIZE_STRING);
+        $description = isset($data['description']) ? filter_var($data['description'], FILTER_SANITIZE_STRING) : '';
+        $expected_guests = isset($data['expected_guests']) ? (int)$data['expected_guests'] : null;
+        $budget = isset($data['budget']) ? (float)$data['budget'] : null;
+        $id_client = (int)$data['id_client'];
+        $id_type = (int)$data['id_type'];
+
+        return $this->model->addEvent($this->pdo, $title, $event_date, $location, $description, $expected_guests, $budget, $id_client, $id_type);
+    }
+
+    public function updateEvent($id_event, $data) {
+        $required = ['title', 'event_date', 'location', 'status', 'id_client', 'id_type'];
+        foreach ($required as $field) {
+            if (!isset($data[$field])) {
+                throw new Exception("$field is required", 400);
+            }
+        }
+
+        $title = filter_var($data['title'], FILTER_SANITIZE_STRING);
+        $event_date = $data['event_date'];
+        $location = filter_var($data['location'], FILTER_SANITIZE_STRING);
+        $description = isset($data['description']) ? filter_var($data['description'], FILTER_SANITIZE_STRING) : '';
+        $expected_guests = isset($data['expected_guests']) ? (int)$data['expected_guests'] : null;
+        $budget = isset($data['budget']) ? (float)$data['budget'] : null;
+        $status = $data['status'];
+        $id_client = (int)$data['id_client'];
+        $id_type = (int)$data['id_type'];
+
+        return $this->model->updateEvent($this->pdo, $id_event, $title, $event_date, $location, $description, $expected_guests, $budget, $status, $id_client, $id_type);
+    }
+
+    public function deleteEvent($id_event) {
+        return $this->model->deleteEvent($this->pdo, $id_event);
+    }
+
+    // Vendor Management
+    public function getAllVendors() {
+        return $this->model->getAllVendors($this->pdo);
+    }
+
+    public function addVendor($data) {
+        if (!isset($data['name']) || !isset($data['email'])) {
+            throw new Exception('Name and email are required', 400);
+        }
+        $name = filter_var($data['name'], FILTER_SANITIZE_STRING);
+        $email = filter_var($data['email'], FILTER_SANITIZE_EMAIL);
+        $phone = isset($data['phone']) ? filter_var($data['phone'], FILTER_SANITIZE_STRING) : null;
+        $rating = isset($data['rating']) ? (float)$data['rating'] : null;
+        $category = isset($data['category']) ? filter_var($data['category'], FILTER_SANITIZE_STRING) : null;
+        $description = isset($data['description']) ? filter_var($data['description'], FILTER_SANITIZE_STRING) : null;
+        $image = isset($data['image']) ? filter_var($data['image'], FILTER_SANITIZE_URL) : null;
+
+        return $this->model->addVendor($this->pdo, $name, $email, $phone, $rating, $category, $description, $image);
+    }
+
+    public function updateVendor($id_vendor, $data) {
+        if (!isset($data['name']) || !isset($data['email'])) {
+            throw new Exception('Name and email are required', 400);
+        }
+        $name = filter_var($data['name'], FILTER_SANITIZE_STRING);
+        $email = filter_var($data['email'], FILTER_SANITIZE_EMAIL);
+        $phone = isset($data['phone']) ? filter_var($data['phone'], FILTER_SANITIZE_STRING) : null;
+        $rating = isset($data['rating']) ? (float)$data['rating'] : null;
+        $category = isset($data['category']) ? filter_var($data['category'], FILTER_SANITIZE_STRING) : null;
+        $description = isset($data['description']) ? filter_var($data['description'], FILTER_SANITIZE_STRING) : null;
+        $image = isset($data['image']) ? filter_var($data['image'], FILTER_SANITIZE_URL) : null;
+
+        return $this->model->updateVendor($this->pdo, $id_vendor, $name, $email, $phone, $rating, $category, $description, $image);
+    }
+
+    public function deleteVendor($id_vendor) {
+        return $this->model->deleteVendor($this->pdo, $id_vendor);
+    }
+
+    // Category Management (Types)
+    public function getAllTypes() {
+        return $this->model->getAllTypes($this->pdo);
+    }
+
+    public function addType($data) {
+        if (!isset($data['name'])) {
+            throw new Exception('Type name is required', 400);
+        }
+        $type_name = filter_var($data['name'], FILTER_SANITIZE_STRING);
+        return $this->model->addType($this->pdo, $type_name);
+    }
+
+    public function updateType($id_type, $data) {
+        if (!isset($data['name'])) {
+            throw new Exception('Type name is required', 400);
+        }
+        $type_name = filter_var($data['name'], FILTER_SANITIZE_STRING);
+        return $this->model->updateType($this->pdo, $id_type, $type_name);
+    }
+
+    public function deleteType($id_type) {
+        return $this->model->deleteType($this->pdo, $id_type);
+    }
+
+    // Request Management
+    public function getAllRequests() {
+        return $this->model->getAllRequests($this->pdo);
+    }
+
+    public function addRequest($data) {
+        $required = ['title', 'id_event'];
+        foreach ($required as $field) {
+            if (!isset($data[$field])) {
+                throw new Exception("$field is required", 400);
+            }
+        }
+
+        $title = filter_var($data['title'], FILTER_SANITIZE_STRING);
+        $description = isset($data['description']) ? filter_var($data['description'], FILTER_SANITIZE_STRING) : null;
+        $deadline = isset($data['deadline']) ? $data['deadline'] : null;
+        $id_event = (int)$data['id_event'];
+        $id_vendor = isset($data['id_vendor']) ? (int)$data['id_vendor'] : null;
+
+        return $this->model->addRequest($this->pdo, $title, $description, $deadline, $id_event, $id_vendor);
+    }
+
+    public function updateRequest($id_request, $data) {
+        $required = ['title', 'status'];
+        foreach ($required as $field) {
+            if (!isset($data[$field])) {
+                throw new Exception("$field is required", 400);
+            }
+        }
+
+        $title = filter_var($data['title'], FILTER_SANITIZE_STRING);
+        $description = isset($data['description']) ? filter_var($data['description'], FILTER_SANITIZE_STRING) : null;
+        $deadline = isset($data['deadline']) ? $data['deadline'] : null;
+        $status = $data['status'];
+        $id_vendor = isset($data['id_vendor']) ? (int)$data['id_vendor'] : null;
+
+        return $this->model->updateRequest($this->pdo, $id_request, $title, $description, $deadline, $status, $id_vendor);
+    }
+
+    public function updateRequestStatus($id_request, $status) {
+        return $this->model->updateRequestStatus($this->pdo, $id_request, $status);
+    }
+
+    public function deleteRequest($id_request) {
+        return $this->model->deleteRequest($this->pdo, $id_request);
+    }
+
+    // Analytics
+    public function getAnalyticsData() {
+        return $this->model->getAnalyticsData($this->pdo);
+    }
+
+    // Backup
+    public function createBackup() {
+        $backup = $this->model->createDatabaseBackup($this->pdo);
+        $filename = 'venuvibe_backup_' . date('Y-m-d_H-i-s') . '.sql';
+        $filepath = __DIR__ . '/../../backups/' . $filename;
+        
+        // Create backups directory if it doesn't exist
+        $backupDir = __DIR__ . '/../../backups/';
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0755, true);
+        }
+        
+        file_put_contents($filepath, $backup);
+        
+        return [
+            'filename' => $filename,
+            'filepath' => $filepath,
+            'size' => filesize($filepath)
+        ];
+    }
 }
+
+

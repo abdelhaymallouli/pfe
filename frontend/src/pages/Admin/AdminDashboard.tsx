@@ -89,9 +89,11 @@ export const AdminDashboard = () => {
                     <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                     <p className="mt-1 text-sm text-gray-500">Welcome to the VenuVibe administration panel</p>
                 </div>
-                <Button variant="outline" leftIcon={<Settings size={20} />}>
-                    Settings
-                </Button>
+                <Link to="/admin/settings">
+                    <Button variant="outline" leftIcon={<Settings size={20} />}>
+                        Settings
+                    </Button>
+                </Link>
             </div>
 
             {/* Stats Overview */}
@@ -259,9 +261,11 @@ export const AdminDashboard = () => {
                         <p className="text-sm text-gray-500">View platform analytics and reports</p>
                     </CardHeader>
                     <CardContent>
-                        <Button className="w-full" leftIcon={<BarChart3 size={20} />} variant="outline">
-                            View Analytics
-                        </Button>
+                        <Link to="/admin/analytics">
+                            <Button className="w-full" leftIcon={<BarChart3 size={20} />} variant="outline">
+                                View Analytics
+                            </Button>
+                        </Link>
                     </CardContent>
                 </Card>
             </div>
