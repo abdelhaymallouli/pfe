@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../../config/cors.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../controllers/AdminController.php';
+require_once __DIR__ . '/../../config/auth_config.php';
 
 // Start output buffering
 ob_start();
