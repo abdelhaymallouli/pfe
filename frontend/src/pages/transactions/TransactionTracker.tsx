@@ -20,7 +20,7 @@ interface Requete {
   title: string; 
   description: string | null;
   deadline: string | null; 
-  status: 'Open' | 'Under Consideration' | 'Completed' | 'Cancelled'; 
+  status: 'Open' | 'In Progress' | 'Completed' | 'Cancelled'; 
   amount: number | null; 
   transaction_date: string | null;
 }
@@ -92,7 +92,7 @@ const fetchEventsAndRequetes = useCallback(async () => {
               title: req.title || 'Untitled',
               description: req.description || null,
               date_limite: req.deadline || null,
-              status: ['Open', 'Under Consideration', 'Completed', 'Cancelled'].includes(req.status)
+              status: ['Open', 'In Progress', 'Completed', 'Cancelled'].includes(req.status)
                 ? req.status
                 : 'Open',
               amount: req.amount != null ? parseFloat(req.amount) : null,
@@ -151,7 +151,7 @@ const retryFetchEvent = async (eventId: string) => {
           title: req.title || 'Untitled',
           description: req.description || null,
           date_limite: req.deadline || null,
-          status: ['Open', 'Under Consideration', 'Completed', 'Cancelled'].includes(req.status)
+          status: ['Open', 'In Progress', 'Completed', 'Cancelled'].includes(req.status)
             ? req.status
             : 'Open',
           amount: req.amount != null ? parseFloat(req.amount) : null,
@@ -181,8 +181,7 @@ const retryFetchEvent = async (eventId: string) => {
 
 const handleUpdateStatus = async (
   requeteId: string,
-  newStatus: 'Open' | 'Under Consideration' | 'Completed' | 'Cancelled'
-) => {
+  newStatus: 'Open' | 'In Progress' | 'Completed' | 'Cancelled') => {
   if (!currentUser?.id) {
     toast.error('You must be logged in to update status.');
     return;

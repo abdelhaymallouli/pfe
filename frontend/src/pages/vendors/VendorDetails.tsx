@@ -21,7 +21,7 @@ import { Button } from '../../components/ui/Button';
 interface Vendor {
   id: string;
   name: string;
-  category: string | null; // Allow null
+  category: string | null; 
   description: string;
   rating: number;
   prices: string;

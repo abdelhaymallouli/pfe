@@ -2,10 +2,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/pfe/backend/src/api/';
 
-// Authentication service
-// Authentication service
 const AuthService = {
-  // Login user
   login: async (email: string, password: string) => {
     try {
       const response = await axios.post(`${API_URL}/login.php`, {
@@ -14,7 +11,6 @@ const AuthService = {
       });
 
       if (response.data.status === 'success') {
-        // Store user only (no token)
         localStorage.setItem('user', JSON.stringify(response.data.data.user));
       }
 
@@ -24,7 +20,6 @@ const AuthService = {
     }
   },
 
-  // Register user
   register: async (username: string, email: string, password: string, confirmPassword: string) => {
     try {
       const response = await axios.post(`${API_URL}/signup.php`, {
@@ -52,8 +47,6 @@ const AuthService = {
   isLoggedIn: () => {
     return !!localStorage.getItem('user');
   },
-
 };
-
 
 export default AuthService;

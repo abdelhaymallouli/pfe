@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import OAuthService from '../services/OAuthService';
+import AuthService from '../services/AuthService';
 
 interface User {
   id: number;
@@ -14,11 +14,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<any>;
   register: (username: string, email: string, password: string, confirmPassword: string) => Promise<any>;
   logout: () => void;
-  googleLogin: (tokenResponse: any) => Promise<any>;
-  facebookLogin: (response: any) => Promise<any>;
-  getOAuthProviders: () => Promise<any>;
-  linkOAuthProvider: (provider: string, token: string) => Promise<any>;
-  unlinkOAuthProvider: (provider: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,70 +22,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  const user = OAuthService.getCurrentUser();
-  if (user) {
-    setCurrentUser(user);
-  }
-  setLoading(false);
-}, []);
-
-const login = async (email: string, password: string) => {
-  try {
-    const response = await OAuthService.login(email, password);
-    if (response.status === 'success') {
-      setCurrentUser(response.data.user);
+  useEffect(() => {
+    const user = AuthService.getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
     }
-    return response;
-  } catch (error) {
-    throw error;
-  }
-};
+    setLoading(false);
+  }, []);
 
-  const register = async (username: string, email: string, password: string, confirmPassword: string) => {
-    return OAuthService.register(username, email, password, confirmPassword);
-  };
-
-  const logout = () => {
-    OAuthService.logout();               // Clear server/session/token-side
-    setCurrentUser(null);                // Reset local user state
-    localStorage.removeItem('venuvibe_user');     // Clear stored user data
-  };
-  
-
-
-  const googleLogin = async (tokenResponse: any) => {
+  const login = async (email: string, password: string) => {
     try {
-      const response = await OAuthService.googleLogin(tokenResponse);
-      setCurrentUser(response.data.user);
+      const response = await AuthService.login(email, password);
+      if (response.status === 'success') {
+        setCurrentUser(response.data.user);
+      }
       return response;
     } catch (error) {
       throw error;
     }
   };
 
-  const facebookLogin = async (response: any) => {
-    try {
-      const apiResponse = await OAuthService.facebookLogin(response);
-      setCurrentUser(apiResponse.data.user);
-      return apiResponse;
-    } catch (error) {
-      throw error;
-    }
+  const register = async (username: string, email: string, password: string, confirmPassword: string) => {
+    return AuthService.register(username, email, password, confirmPassword);
   };
 
-  const getOAuthProviders = async () => {
-    return OAuthService.getOAuthProviders();
+  const logout = () => {
+    AuthService.logout();
+    setCurrentUser(null);
+    localStorage.removeItem('venuvibe_user');
   };
-
-  const linkOAuthProvider = async (provider: string, token: string) => {
-    return OAuthService.linkOAuthProvider(provider, token);
-  };
-
-  const unlinkOAuthProvider = async (provider: string) => {
-    return OAuthService.unlinkOAuthProvider(provider);
-  };
-
 
   const value = {
     currentUser,
@@ -99,11 +59,6 @@ const login = async (email: string, password: string) => {
     login,
     register,
     logout,
-    googleLogin,
-    facebookLogin,
-    getOAuthProviders,
-    linkOAuthProvider,
-    unlinkOAuthProvider,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

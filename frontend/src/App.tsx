@@ -2,13 +2,14 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
 import { Navbar } from './components/navigation/Navbar';
 import { Footer } from './components/navigation/Footer';
 
 import { Landing } from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
 import { EventList } from './pages/events/EventList';
 import { EventForm } from './pages/events/EventForm';
@@ -19,17 +20,16 @@ import { TransactionTracker } from './pages/transactions/TransactionTracker';
 import { AddTransactionForm } from './pages/transactions/AddTransactionForm';
 import { AdminLogin } from './pages/Admin/AdminLogin';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
-import AnalyticsDashboard from './pages/Admin/AnalyticsDashboard';
 import AdminSettings from './pages/Admin/AdminSettings';
 import { UserManagement } from './pages/Admin/UserManagement';
 import { EventManagement } from './pages/Admin/EventManagement';
 import { VendorManagement } from './pages/Admin/VendorManagement';
-import { CategoryManagement } from './pages/Admin/CategoryManagement';
+import  {AddEditVendor} from './pages/Admin/AddEditVendor';
 import { RequestManagement } from './pages/Admin/RequestManagement';
 import Profile from './pages/Profile';
 
-// ✅ Protected Route Wrapper
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+// Protected Route Wrapper
+const ProtectedRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
@@ -43,7 +43,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return currentUser ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-// ✅ User Routes with Navbar & Footer
+// User Routes with Navbar & Footer
 const UserLayout = () => (
   <>
     <Navbar />
@@ -52,6 +52,8 @@ const UserLayout = () => (
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/events" element={<ProtectedRoute><EventList /></ProtectedRoute>} />
         <Route path="/events/new" element={<ProtectedRoute><EventForm /></ProtectedRoute>} />
@@ -68,7 +70,7 @@ const UserLayout = () => (
   </>
 );
 
-// ✅ Admin Routes without Navbar/Footer
+// Admin Routes without Navbar/Footer
 const AdminRoutes = () => (
   <Routes>
     <Route path="/admin/login" element={<AdminLogin />} />
@@ -76,15 +78,15 @@ const AdminRoutes = () => (
     <Route path="/admin/users" element={<UserManagement />} />
     <Route path="/admin/events" element={<EventManagement />} />
     <Route path="/admin/vendors" element={<VendorManagement />} />
-    <Route path="/admin/categories" element={<CategoryManagement />} />
     <Route path="/admin/requests" element={<RequestManagement />} />
-    <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
     <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/admin/vendors/add" element={<AddEditVendor />} />
+        <Route path="/admin/vendors/edit/:id" element={<AddEditVendor />} />
     <Route path="*" element={<Navigate to="/admin/login" replace />} />
   </Routes>
 );
 
-// ✅ Main App
+// Main App
 function App() {
   const location = useLocation();
   const isAdminPath = location.pathname.startsWith('/admin');
@@ -110,11 +112,8 @@ function App() {
 
 const AppWrapper = () => (
   <Router>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
+    <App />
   </Router>
 );
 
 export default AppWrapper;
-
