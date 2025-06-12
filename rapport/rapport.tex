@@ -1,0 +1,767 @@
+\documentclass{report}
+
+% Required packages
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, urlcolor=blue, linkcolor=blue, linktocpage=true]{hyperref} % linktocpage makes chapter/section numbers clickable in ToC
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{enumitem} % For custom list indentation if needed, but not strictly necessary here.
+\usepackage{xcolor}   % Required for coloring in listings
+\usepackage{listings} % For code snippets
+
+% Custom style for code listings (similar to PDF's appearance)
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codeblue}{rgb}{0.1,0.1,0.8}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.96,0.96,0.96} % Light grey background for code blocks
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codeblue},
+    identifierstyle=\color{codepurple}, % Variables/functions
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b, % Caption below listing
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single, % Add a frame around the code
+    frameround=tttt, % Round corners for the frame
+    rulesepcolor=\color{codegray!50}, % Color of the frame lines
+    xleftmargin=1em, % Indent from left
+    xrightmargin=1em % Indent from right
+}
+\lstset{style=mystyle}
+
+% --- Custom Title Page ---
+% This replicates the first page of your PDF
+
+\begin{document}
+
+\thispagestyle{empty} % No page number on the first page
+
+% --- Top Logos ---
+% Using minipages and \hfill to place images in top-left and top-right corners
+\noindent
+\begin{minipage}[t]{0.5\textwidth} % Minipage for left logo
+    \raggedright % Aligns content to the left within this minipage
+    \includegraphics[width=0.5\textwidth]{./ofppt_logo.jpg}
+\end{minipage}
+\hfill % Pushes the next minipage to the right
+\begin{minipage}[t]{0.45\textwidth} % Minipage for right logo
+    \raggedleft % Aligns content to the right within this minipage
+    \includegraphics[width=0.4\textwidth]{./solicode_logo.png} % Adjust width as needed
+\end{minipage}
+
+\vspace{1.5cm} % Space after logos and before the main title
+
+\centering % Center the main title and project title
+{\Huge\textbf{Final Project Report}}
+
+\vspace{1.5cm}
+
+{\Large\textbf{Project Title: A Full-Stack Web Application for Event and Vendor Management}}
+
+\vspace{2cm}
+
+\begin{flushleft} % Start Student Information from the left
+{\large\textbf{Student Information:}}
+\vspace{0.3cm}
+Nom et prénom : MALLOULI ABDELHAY\\
+Niveau : FQ\\
+Filière : Développeur Web – mode Bootcamp\\
+Groupe : DWB101\\
+Année de Formation : 2024-2025
+\end{flushleft}
+
+\vspace{1.5cm}
+
+\begin{flushleft} % Start Supervisor Information from the left
+{\large\textbf{Supervisor Information:}}
+\vspace{0.3cm}
+Professor: Fatine Chebab\\
+Title/Department: [Supervisor's Title/Department]\\
+University/Institution: [Supervisor's University/Institution]
+\end{flushleft}
+
+\vspace{1.5cm}
+
+\begin{flushleft} % Start Date of Submission from the left
+{\large\textbf{Date of Submission:}}
+\vspace{0.3cm}
+June 25, 2025
+\end{flushleft}
+
+\vspace*{\fill} % Pushes the following content to the bottom of the page
+
+% School Information (originally at the bottom)
+\begin{center}
+% Removed the solicode_logo here as it's now placed at the top right
+\textbf{SOLICODE}
+\par
+\small
+
+\par
+Adresse: Bni Waryaghel 90000 Tanger, Maroc\\
+Email: \href{mailto:info@solicode.co}{info@solicode.co}\\
+Portable: (212) 0634 39 05 05\\
+Fixe: (212) 0539 30 88 85\\
+Website: \url{https://solicode.co/}
+\end{center}
+
+
+
+\newpage
+
+% --- Abstract ---
+\begin{abstract}
+    \addcontentsline{toc}{chapter}{Abstract} % Add "Abstract" to the Table of Contents
+    \section*{Abstract} % Unnumbered heading for Abstract
+
+    This Final Project Report details the design, development, and evaluation of a comprehensive full-stack web application for event and vendor management. The primary goal of this project is to address the fragmented and inefficient nature of current event planning processes by providing a centralized, integrated platform. The application leverages modern web technologies, specifically PHP for a robust RESTful API, React and TypeScript for a dynamic and responsive frontend, and MySQL for reliable data storage.
+
+    The report outlines the core functionalities, including secure user authentication with JWT and OAuth 2.0, comprehensive CRUD operations for events, vendor registration and listing, and a dedicated administrator dashboard. It also covers the system's architecture, database design, and key implementation details. Rigorous testing, encompassing API endpoint validation and user acceptance testing, confirmed the application's functionality, reliability, and adherence to security standards, including role-based access control and server-side data validation.
+
+    The project successfully delivers a practical solution for streamlining event coordination and fostering efficient collaboration between event organizers and service providers. It concludes by summarizing the achievements, discussing challenges encountered during development, and proposing future enhancements such as real-time notifications, payment gateway integration, and advanced analytics, aiming to further enrich the application's utility and user experience.
+\end{abstract}
+\newpage
+
+% --- Table of Contents ---
+\tableofcontents
+\newpage
+
+% --- Report Content Starts Here ---
+
+% The main report title on the first page of content, unnumbered
+\centering
+{\Huge\textbf{Final Project Report: A Full-Stack Web Application for Event and Vendor Management}}
+\vspace{1.5cm}
+
+\raggedright % Ensures text starts from the left (justified is default for report class, but this explicitly prevents centering)
+
+\chapter{Introduction}
+\label{chap:introduction}
+
+\section{Background and Motivation}
+\label{sec:background_motivation}
+In today's fast-paced world, events, whether they are corporate conferences, social gatherings, or personal celebrations, form an integral part of human interaction and commerce. However, the process of organizing and managing these events can be remarkably complex and fragmented. Event organizers often grapple with a multitude of challenges, including inefficient communication channels with various service providers, difficulties in discovering and vetting suitable vendors, and a lack of transparent tracking for financial transactions and logistical details. Similarly, vendors, ranging from caterers and decorators to photographers and musicians, struggle to effectively market their services, find new opportunities, and streamline their interactions with event planners. This project addresses these pervasive issues by proposing and developing a unified, comprehensive web application designed to connect event organizers and service providers on a single, intuitive platform. The aim is to simplify event planning, enhance coordination, and foster a more efficient and transparent ecosystem for event and vendor management.
+
+\section{Problem Statement}
+\label{sec:problem_statement}
+The core problem this project seeks to resolve is the absence of an efficient, integrated, and user-friendly tool that caters to the holistic needs of event management. Current solutions often provide siloed functionalities, forcing organizers to use disparate systems for vendor sourcing, communication, and financial tracking. This fragmentation leads to increased administrative overhead, potential miscommunications, and a lack of real-time oversight. Concurrently, small to medium-sized event vendors face significant hurdles in gaining visibility and securing engagements, often relying on word-of-mouth or limited, localized advertising. This project directly addresses this critical gap by developing a dedicated full-stack web application that serves as a central hub, enabling seamless interaction, robust management, and enhanced visibility for all stakeholders involved in the event planning lifecycle.
+
+\section{Objectives}
+\label{sec:objectives}
+To effectively tackle the identified problems, this project sets forth the following key objectives:
+\begin{itemize}
+    \item \textbf{To design and develop a secure and scalable RESTful API using PHP:} This API will serve as the backbone of the application, managing all critical data related to users, events, vendors, and service requests. Emphasis will be placed on robust data handling and efficient communication protocols.
+    \item \textbf{To implement a comprehensive and secure authentication system:} This system will support traditional email/password registration and login, alongside modern social media authentication methods (Google and Facebook OAuth 2.0) to enhance user convenience. Secure password recovery mechanisms will also be integrated.
+    \item \textbf{To build a modern, responsive, and intuitive Single-Page Application (SPA) using React and TypeScript:} The frontend will provide a dynamic and engaging user experience, adapting seamlessly across various devices (desktops, tablets, and mobile phones) to ensure accessibility for all users.
+    \item \textbf{To establish distinct user roles with granular permissions:} The application will differentiate between Admin, User (event organizer), and Vendor roles, each possessing specific functionalities and access levels to ensure data security and operational integrity.
+    \item \textbf{To ensure the security and integrity of application data:} This objective encompasses implementing rigorous data validation, secure authentication protocols (including JSON Web Tokens - JWT), and robust authorization mechanisms to protect sensitive information and prevent unauthorized access or malicious activities.
+\end{itemize}
+
+\section{Scope and Limitations}
+\label{sec:scope_limitations}
+
+\subsection{In Scope:}
+\begin{itemize}
+    \item \textbf{User Registration and Profile Management:} Users can create accounts, log in, and manage their personal profiles, including updating contact information and passwords.
+    \item \textbf{Full CRUD Functionality for Events:} Event organizers can create, read, update, and delete event details, including dates, locations, descriptions, and associated images.
+    \item \textbf{Vendor Registration and Listing:} Vendors can register their services, create detailed profiles, and list their offerings for event organizers to browse.
+    \item \textbf{Admin Dashboard for Oversight:} Administrators will have a dedicated interface to manage users, events, and vendors, ensuring system integrity and compliance.
+    \item \textbf{Secure User Authentication with JWT and OAuth 2.0:} Implementation of industry-standard authentication protocols to ensure secure access and data exchange.
+    \item \textbf{Request Management:} Users can send service requests to vendors for specific events, and vendors can manage these requests.
+\end{itemize}
+
+\subsection{Out of Scope:}
+\begin{itemize}
+    \item \textbf{Real-time Chat/Notifications (e.g., WebSockets):} While beneficial, real-time communication features are beyond the current project scope due to time and complexity constraints.
+    \item \textbf{Payment Gateway Integration:} Direct financial transaction processing (e.g., Stripe, PayPal integration) is not included. Transactions will be tracked but not processed within the application.
+    \item \textbf{Mobile Application Development:} The project focuses solely on a web-based application, without native mobile app development.
+    \item \textbf{Advanced Analytics Reporting:} While basic data can be viewed, sophisticated analytical reports and business intelligence features are not part of this scope.
+\end{itemize}
+
+\section{Thesis Structure}
+\label{sec:thesis_structure}
+This report is structured to provide a comprehensive overview of the project, from its foundational concepts to its implementation and evaluation. The subsequent chapters are organized as follows:
+\begin{itemize}
+    \item \textbf{Chapter 2: Literature Review and Background Technologies:} This chapter explores existing event management solutions and provides a detailed justification for the core technologies chosen for this project.
+    \item \textbf{Chapter 3: System Analysis and Design:} This section delves into the architectural design of the application, including system diagrams, database schema, and use case analysis.
+    \item \textbf{Chapter 4: Implementation:} This chapter provides an in-depth look at the development process, detailing both backend (PHP API) and frontend (React \& TypeScript) implementations, including key code snippets and UI screenshots.
+    \item \textbf{Chapter 5: Testing and Evaluation:} This section outlines the testing methodologies employed to ensure the application's functionality, performance, and security.
+    \item \textbf{Chapter 6: Conclusion and Future Work:} The final chapter summarizes the project's achievements, discusses challenges encountered, and proposes potential future enhancements.
+\end{itemize}
+
+\chapter{Literature Review and Background Technologies}
+\label{chap:literature_review}
+
+\section{Review of Existing Systems}
+\label{sec:review_existing_systems}
+The event management industry has seen significant growth, leading to the emergence of numerous platforms designed to streamline various aspects of event planning. To position this project effectively, it is crucial to analyze existing solutions and identify their strengths, weaknesses, and the unique niche our application aims to fill. Platforms like Eventbrite and Cvent are prominent examples, each offering a suite of features but often with specific focuses.
+
+Eventbrite is widely recognized for its user-friendly interface and strong focus on event discovery, ticketing, and promotion for a broad range of events, from small workshops to large festivals. Its strengths lie in its ease of use for event creators, robust marketing tools, and a vast user base for attendees. However, Eventbrite's primary focus is on event promotion and ticket sales, and it often lacks comprehensive tools for in-depth vendor management, detailed logistical coordination, or granular control over service requests. Organizers using Eventbrite might still need to rely on external tools or manual processes to manage their vendor relationships effectively.
+
+Cvent, on the other hand, targets larger enterprises and professional event planners, offering a more extensive and integrated suite of tools for event lifecycle management, including strategic meetings management, attendee engagement, and robust reporting. Cvent excels in its comprehensive features for complex events, detailed analytics, and enterprise-level security. However, its complexity and cost can be prohibitive for smaller organizations or individual event organizers. Furthermore, while Cvent offers vendor sourcing capabilities, the depth of interaction and direct management of vendor services within the platform might still be limited for a truly collaborative ecosystem.
+
+Our project aims to bridge the gap identified in these existing systems. While Eventbrite is accessible but lacks deep vendor integration, and Cvent is comprehensive but often too complex and costly for many users, our application focuses on providing a balanced solution. It emphasizes a seamless, integrated experience for both event organizers and vendors, facilitating direct communication, transparent request management, and efficient coordination, all within a user-friendly and accessible framework. This focus on a collaborative ecosystem for event and vendor management differentiates our solution by addressing the specific pain points of fragmented communication and inefficient vendor interaction that are not fully resolved by current market offerings.
+
+\section{Core Technologies}
+\label{sec:core_technologies}
+The selection of appropriate technologies is paramount to the success, scalability, and maintainability of any modern web application. For this project, a robust and widely supported stack was chosen to ensure reliability, performance, and future extensibility. The core technologies employed are PHP for the backend API, React and TypeScript for the frontend, MySQL as the database, and JSON Web Tokens (JWT) with OAuth 2.0 for authentication.
+
+\subsection{Backend Technology (PHP)}
+PHP (Hypertext Preprocessor) was chosen as the primary technology for developing the backend RESTful API due to several compelling reasons. Firstly, PHP boasts a massive and active community, which translates to extensive documentation, a wealth of online resources, and readily available support. This widespread adoption contributes to its cost-effectiveness, particularly when deployed on common LAMP (Linux, Apache, MySQL, PHP) or XAMPP (cross-platform, Apache, MySQL, PHP, Perl) stacks, which are known for their stability and ease of setup. PHP is highly suitable for building REST APIs because of its excellent capabilities in handling HTTP requests, processing data, and interacting with databases. Its maturity and continuous evolution, with significant performance improvements in recent versions, make it a reliable choice for server-side logic and API development. The project leverages PHP to manage user authentication, event data, vendor profiles, and service requests, ensuring efficient and secure data operations.
+
+\subsection{Frontend Technology (React \& TypeScript)}
+The frontend of the application is built using React, a popular JavaScript library for building user interfaces, combined with TypeScript, a superset of JavaScript. React was selected for its component-based architecture, which promotes modularity, reusability, and easier management of complex UIs. This approach allows developers to break down the user interface into smaller, independent components, each responsible for a specific part of the UI, leading to more organized and maintainable code. React's use of a virtual DOM (Document Object Model) significantly enhances performance by minimizing direct manipulation of the browser's DOM, resulting in faster and smoother user experiences. The vibrant React ecosystem provides a rich collection of libraries, tools, and community support. The integration of TypeScript further elevates the development process by introducing static typing. This means that variable types are checked during development, catching potential errors early, improving code quality, and making the codebase more robust and easier to refactor, especially in larger projects. TypeScript also enhances developer productivity through better autocompletion and navigation in integrated development environments (IDEs).
+
+\subsection{Database (MySQL)}
+MySQL was chosen as the relational database management system (RDBMS) for storing and managing the application's data. Its selection is justified by its proven reliability, high performance, and widespread use in web applications. MySQL adheres to ACID (Atomicity, Consistency, Isolation, Durability) properties, ensuring data integrity and transactional reliability, which is critical for an application handling user, event, and financial transaction data. Its structured nature and support for relational models make it an excellent fit for the project's data requirements, where clear relationships exist between entities such as users, events, vendors, and requests. MySQL's robust indexing capabilities allow for efficient data retrieval, even with large datasets, contributing to the overall responsiveness of the application. Furthermore, its open-source nature and extensive community support provide a cost-effective and well-supported database solution.
+
+\subsection{Authentication (JWT \& OAuth 2.0)}
+To ensure secure and efficient user authentication, the project employs a combination of JSON Web Tokens (JWT) and OAuth 2.0. JWTs are a compact, URL-safe means of representing claims to be transferred between two parties. They are particularly well-suited for creating stateless, secure sessions between the frontend and backend. Once a user successfully authenticates, the server generates a JWT and sends it to the client. This token is then included in the \texttt{Authorization} header of subsequent requests, allowing the backend to verify the user's identity and permissions without needing to query the database for every request, thereby improving performance and scalability. JWTs are cryptographically signed, ensuring their integrity and authenticity.
+
+OAuth 2.0 is an industry-standard protocol for delegated authorization. It allows users to grant third-party applications (like our web application) limited access to their resources on another service (like Google or Facebook) without exposing their credentials. By integrating OAuth 2.0, our application enhances user convenience by allowing them to log in using their existing Google or Facebook accounts, eliminating the need to create and remember new credentials. This not only improves the user experience but also leverages the robust security infrastructure of these major platforms for authentication.
+
+\subsection{API Architecture (REST)}
+The application's communication between the frontend and backend is based on REST (Representational State Transfer) architectural principles. REST is a widely adopted standard for designing networked applications, emphasizing a stateless client-server communication model. In a RESTful architecture, resources (e.g., users, events, vendors) are identified by unique URLs, and standard HTTP methods (GET, POST, PUT, DELETE) are used to perform operations on these resources. This approach offers several advantages: it promotes a clear separation of concerns between the client and server, making both components easier to develop, test, and maintain independently. RESTful APIs are inherently scalable, as the server does not need to maintain client state between requests. This statelessness simplifies server design and allows for easier load balancing. Furthermore, REST's use of standard HTTP methods makes the API intuitive and easily consumable by various clients, including web browsers, mobile applications, and other services, ensuring broad interoperability.
+
+\chapter{System Analysis and Design}
+\label{chap:system_analysis}
+This chapter outlines the architectural blueprint of the event and vendor management system, detailing its structure, data organization, and how different components and users interact within the system. A well-defined system analysis and design phase is crucial for building a robust, scalable, and maintainable application.
+
+\section{System Architecture}
+\label{sec:system_architecture}
+The event and vendor management application employs a classic two-tier client-server architecture, which provides a clear separation of concerns between the user interface and the data processing logic. This architectural choice enhances scalability, maintainability, and security. At its core, the system comprises a React-based Frontend (the client-side application) and a PHP-based Backend (the server-side API), which interacts with a MySQL Database.
+\begin{itemize}
+    \item \textbf{React Frontend (Client-Side):} This is the user-facing part of the application. Developed using React and TypeScript, it runs directly in the user's web browser. Its primary responsibilities include rendering the user interface, handling user interactions (e.g., form submissions, button clicks), and making requests to the backend API to fetch or send data. The frontend is designed to be responsive, ensuring a consistent and optimal user experience across various devices, from desktops to mobile phones.
+    \item \textbf{REST API (PHP Backend):} The backend serves as the central processing unit of the application. Built with PHP, it exposes a set of RESTful API endpoints that the frontend consumes. Its key functions include processing business logic, validating incoming data, interacting with the database, and handling user authentication and authorization. All communication between the frontend and the backend occurs via standard HTTP requests, ensuring a stateless and scalable interaction model.
+    \item \textbf{MySQL Database:} This relational database serves as the persistent storage for all application data. It stores information about users (administrators, clients, vendors), events, service requests, and transactions. The backend interacts with the MySQL database to store, retrieve, update, and delete data based on the requests received from the frontend. The relational structure of MySQL ensures data integrity and efficient querying.
+\end{itemize}
+The data flow within this architecture is straightforward: the React Frontend sends requests to the PHP Backend's REST API. The Backend processes these requests, interacts with the MySQL Database as needed, and then sends a structured response (typically in JSON format) back to the Frontend. The Frontend then interprets this response and updates the user interface accordingly.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{database shema.png} % Replace with your image path
+    \caption{High-level System Architecture Diagram showing the interaction between the React Frontend, PHP Backend (REST API), and MySQL Database. Arrows indicate the direction of data flow.}
+    \label{fig:system_architecture_diagram}
+\end{figure}
+
+\section{Database Design}
+\label{sec:database_design}
+The foundation of any robust application lies in a well-structured database. The database for this event and vendor management system is designed to efficiently store and manage all relevant information, ensuring data integrity and facilitating quick retrieval. The schema is normalized to minimize redundancy and optimize performance. For a comprehensive understanding of the database structure, both the Conceptual Data Model (MCD) and the Logical Data Model (MLD) are presented.
+
+\subsection{Conceptual Data Model (MCD)}
+The MCD provides a high-level, abstract view of the data, focusing on the main entities, their attributes, and the relationships between them, independent of any specific database technology. It represents the business rules and data requirements in a clear, understandable format.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{mcd Venuvibe.png} % Replace with your image path
+    \caption{Conceptual Data Model (MCD) of the Venuvibe Database. This diagram illustrates the core entities such as Client, Event, Type, Vendor, Request, and Transaction, along with their relationships and cardinalities, providing a technology-agnostic view of the data structure.}
+    \label{fig:mcd_diagram}
+\end{figure}
+
+\subsection{Logical Data Model (MLD)}
+The MLD translates the conceptual model into a more detailed structure, representing how the data will be organized in a relational database. It defines tables, columns, primary keys, foreign keys, and the relationships between tables, reflecting the actual database schema. The MLD is a direct representation of the \texttt{database.sql} file.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{mld venuvibe.png} % Replace with your image path
+    \caption{Logical Data Model (MLD) of the Venuvibe Database. This diagram details the relational tables (\texttt{client}, \texttt{event}, \texttt{type}, \texttt{vendor}, \texttt{request}, \texttt{transaction}, \texttt{vendor\_type}, \texttt{categorizes}, \texttt{offers}, \texttt{assigned\_to}, \texttt{belongs\_to}), their attributes, primary keys, foreign keys, and the explicit relationships between them, forming the blueprint for the MySQL database.}
+    \label{fig:mld_diagram}
+\end{figure}
+
+As depicted in the MLD, the main tables include:
+\begin{itemize}
+    \item \textbf{client Table:} Stores information about system administrators, including their name, email, and securely hashed password. This table is crucial for managing administrative access to the system.
+    \item \textbf{event Table:} Contains all details pertaining to an event, such as its title, date, location, description, banner image, expected guests, and budget. Each event is linked to a specific \texttt{client} (event organizer) and an \texttt{event\_type}.
+    \item \textbf{type Table:} A lookup table that categorizes events (e.g., Wedding, Birthday, Corporate, Concert). This helps in organizing events and allows for easier filtering and searching.
+    \item \textbf{vendor Table:} Stores comprehensive profiles of service providers, including their name, category (e.g., Catering, Photography), description of services, contact information (phone, email), and an image. Vendors can also have a rating.
+    \item \textbf{request Table:} Facilitates the interaction between event organizers and vendors. When a client needs a service for an event, they create a request. This table links a specific event to a vendor and can be associated with a \texttt{transaction}.
+    \item \textbf{transaction Table:} Records financial transactions related to requests, such as the amount and date of a payment. Each transaction is linked to a specific \texttt{event}.
+    \item \textbf{vendor\_type Table:} This is an associative entity that links \texttt{vendor} and \texttt{type} entities, allowing a vendor to offer services for multiple event types and an event type to be associated with multiple vendors. It also includes a price attribute for the vendor's service for a specific type.
+\end{itemize}
+Relationships between these tables are established using foreign keys, ensuring referential integrity. For instance, \texttt{event.id\_client} is a foreign key referencing \texttt{client.id\_client}, indicating which client organized a particular event. Similarly, \texttt{event.id\_type} links an event to its category in the \texttt{type} table. The \texttt{request} table serves as a crucial junction, connecting \texttt{event}, \texttt{vendor}, and \texttt{transaction} records, thereby enabling a comprehensive tracking of service engagements. The \texttt{categorizes}, \texttt{offers}, \texttt{assigned\_to}, and \texttt{belongs\_to} tables represent the relationships between the main entities, detailing how events are categorized by types, vendors offer specific types of services, requests are assigned to vendors, and requests belong to events.
+
+\section{Use Case Analysis}
+\label{sec:use_case_analysis}
+Use case analysis is a technique used to identify and describe the interactions between users (actors) and a system. It helps in understanding the functional requirements of the system from the user's perspective. For this event and vendor management system, three primary actors have been identified: Client, Vendor, and Administrator. Each actor interacts with the system to achieve specific goals, contributing to the overall functionality of the application.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{Use Case Venuvibe.drawio.png} % Replace with your image path
+    \caption{Use Case Diagram illustrating the primary actors (Client, Admin) and their key interactions with the Event and Vendor Management System. This diagram provides a high-level overview of the system's functional scope from a user perspective, detailing actions such as event creation, vendor selection, and administrative oversight.}
+    \label{fig:use_case_diagram}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{Client:} This actor represents an individual or organization looking to plan and manage events. Their primary interactions with the system include:
+    \begin{itemize}
+        \item \textbf{Créer un événement (Create an event):} Clients can initiate the process of creating a new event, providing all necessary details.
+        \item \textbf{Suivre le budget (Track budget):} Clients can monitor and manage the financial aspects of their events.
+        \item \textbf{Ajouter des collaborateurs (Add collaborators):} Clients can invite others to assist in event planning.
+        \item \textbf{Gérer ses événements (Manage their events):} Clients have full control over their created events, including editing and viewing status.
+        \item \textbf{Consulter le catalogue de prestataires (Consult the service provider catalog):} Clients can browse and search for various vendors (service providers) to find suitable options for their events.
+        \item \textbf{Choisir des prestataires (Choose service providers):} Clients can select specific vendors for their events.
+        \item \textbf{Créer des requêtes / tâches (Create requests / tasks):} Clients can send specific service requests or assign tasks to selected vendors for their events.
+        \item \textbf{Se connecter (Log in):} Clients can securely log into the platform.
+        \item \textbf{Créer un compte (Create an account):} New clients can register for an account.
+    \end{itemize}
+    \item \textbf{Admin:} This actor has elevated privileges and is responsible for the overall management and oversight of the system. Their interactions primarily involve:
+    \begin{itemize}
+        \item \textbf{Créer un prestataire (Create a service provider):} Administrators can add new vendors to the system.
+        \item \textbf{Gérer les prestataires (Manage service providers):} Administrators have the ability to manage existing vendor profiles, ensuring quality and compliance.
+        \item \textbf{Consulter le tableau de bord (Consult the dashboard):} Administrators can view an overview of system activities and key metrics.
+        \item \textbf{Superviser les requêtes (Supervise requests):} Administrators can monitor and manage service requests between clients and vendors.
+        \item \textbf{Superviser les événements (Supervise events):} Administrators have oversight over all events created on the platform.
+        \item \textbf{Se connecter (Log in):} Administrators can securely log into their administrative interface.
+    \end{itemize}
+\end{itemize}
+These use cases illustrate the distinct roles and responsibilities within the system, ensuring that each type of user has the necessary tools to perform their tasks effectively while maintaining the security and integrity of the application.
+
+\chapter{Implementation}
+\label{chap:implementation}
+This chapter provides a detailed exposition of the technical implementation of the full-stack web application, covering both the backend API developed with PHP and the frontend user interface built using React and TypeScript. It outlines the architectural choices, key functionalities, and significant code structures that bring the system to life.
+
+\section{Backend Implementation (PHP API)}
+\label{sec:backend_implementation}
+The backend of the application is a robust RESTful API developed in PHP, designed to handle all data operations and business logic. It acts as the central data hub, serving information to the frontend and managing interactions with the MySQL database. The implementation follows a structured approach to ensure maintainability, scalability, and security.
+
+\subsection{Project Setup \& Structure}
+\label{sec:backend_project_structure}
+The backend project is organized into a clear and logical folder structure, promoting separation of concerns and adherence to modern development practices. The main directories include:
+\begin{itemize}
+    \item \texttt{config/}: Contains configuration files for the application, such as database connection settings (\texttt{database.php}), authentication parameters (\texttt{auth\_config.php}), and Cross-Origin Resource Sharing (CORS) settings (\texttt{cors.php}). This centralizes configurable parameters, making the application adaptable to different environments.
+    \item \texttt{src/}: Houses the core application logic, further subdivided into:
+    \begin{itemize}
+        \item \texttt{api/}: Contains the individual API endpoint scripts (e.g., \texttt{login.php}, \texttt{events.php}, \texttt{vendors.php}). These scripts serve as the entry points for frontend requests, routing them to the appropriate controllers.
+        \item \texttt{controllers/}: Implements the business logic for handling requests. Controllers receive data from the API endpoints, interact with models to perform database operations, and prepare responses. Examples include \texttt{EventController.php} and \texttt{VendorController.php}.
+        \item \texttt{models/}: Encapsulates database interaction logic. Each model corresponds to a database table (e.g., \texttt{EventModel.php}, \texttt{UserModel.php}) and provides methods for CRUD (Create, Read, Update, Delete) operations, abstracting the database details from the controllers.
+        \item \texttt{uploads/}: A designated directory for storing uploaded files, such as event banner images or vendor profile pictures, ensuring they are securely managed and accessible.
+        \item \texttt{utils/}: Contains utility classes and helper functions, such as \texttt{jwt.php} for JWT token handling and \texttt{api\_response.php} for standardized API response formatting.
+    \end{itemize}
+\end{itemize}
+This modular structure ensures that different aspects of the application are well-separated, making it easier to develop, debug, and scale.
+
+\subsection{API Routing and Controllers}
+\label{sec:api_routing_controllers}
+The backend handles incoming HTTP requests by routing them to the appropriate controller methods. When a request arrives at an API endpoint (e.g., \texttt{GET /api/events.php}), the endpoint script acts as a dispatcher. It initializes the necessary controller (e.g., \texttt{EventController}) and invokes the relevant method based on the HTTP request method (GET, POST, PUT, DELETE) and any additional parameters. For instance, a GET request to \texttt{events.php} might call an \texttt{index()} method in \texttt{EventController} to retrieve a list of all events, while a POST request might call a \texttt{create()} method to add a new event. This clear routing mechanism ensures that requests are processed efficiently and correctly.
+
+\subsection{Database Interaction (Models)}
+\label{sec:database_interaction_models}
+Models are responsible for all interactions with the MySQL database. They abstract the database operations, providing a clean interface for controllers to perform data manipulation without needing to know the underlying SQL queries. Each model class typically represents a database table and contains methods for common operations. For example, the \texttt{EventModel.php} handles all database operations related to events. Below is a simplified example of a function from \texttt{EventModel} that retrieves all events, demonstrating how models interact with the PDO (PHP Data Objects) connection to execute SQL queries and fetch results.
+
+\begin{lstlisting}[caption={Code Snippet 4.1: \texttt{getAllEvents()} function from \texttt{EventModel.php}, demonstrating database retrieval.},label={lst:getAllEvents},language=PHP]
+<?php
+// backend/src/models/EventModel.php
+class EventModel {
+    private $pdo;
+    private $table = 'event';
+
+    public function __construct($pdo) {
+        $this->pdo = $pdo;
+    }
+
+    public function getAllEvents() {
+        try {
+            $sql = "SELECT e.id_event AS id, e.id_client,
+                    e.title, t.type_name AS type, e.id_type, e.event_date,
+                    e.location,
+                    e.banner_image,
+                    e.description, e.expected_guests, e.budget, e.status
+                    FROM {$this->table} e
+                    JOIN type t ON e.id_type = t.id_type";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute();
+            $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $events;
+        } catch (Exception $e) {
+            error_log("EventModel::getAllEvents failed: " . $e->getMessage());
+            throw $e;
+        }
+    }
+}
+\end{lstlisting}
+
+\subsection{User Authentication and Security}
+\label{sec:user_auth_security}
+Security is a paramount concern for any web application, especially one handling user data and sensitive event information. The backend implements a robust authentication and authorization system to ensure that only legitimate and authorized users can access specific resources and functionalities.
+
+\subsubsection{JWT Implementation}
+\label{sec:jwt_implementation}
+JSON Web Tokens (JWT) are central to the authentication process, providing a secure and stateless mechanism for managing user sessions. When a user successfully logs in (by sending their credentials to \texttt{api/login.php}), the server verifies these credentials against the database. If valid, a unique JWT is generated. This token contains essential user information (e.g., user ID, username) and an expiration timestamp, all cryptographically signed to prevent tampering. The generated JWT is then sent back to the frontend. For all subsequent requests to protected API endpoints, the frontend includes this JWT in the \texttt{Authorization} header. The backend then validates the token, ensuring its authenticity and that it has not expired, before processing the request. This stateless approach significantly reduces server load and enhances scalability.
+
+\begin{lstlisting}[caption={Code Snippet 4.2: Simplified \texttt{generate()} function from \texttt{JWT.php}, illustrating the creation of a JSON Web Token upon successful user authentication.},label={lst:jwt_generate},language=PHP]
+<?php
+// backend/src/utils/jwt.php
+class JWT {
+    // Generate JWT token
+    public static function generate($user_id, $username) {
+        $issued_at = time();
+        $expiration = $issued_at + JWT_EXPIRATION; // JWT_EXPIRATION is a constant defined in auth_config.php
+
+        $payload = array(
+            "iat" => $issued_at, // Issued at time
+            "exp" => $expiration, // Expiration time
+            "user_id" => $user_id,
+            "username" => $username
+        );
+
+        // Encode Header (typ: JWT, alg: HS256)
+        $header = json_encode(["typ" => "JWT", "alg" => "HS256"]);
+        $header = self::base64UrlEncode($header);
+
+        // Encode Payload
+        $payload = json_encode($payload);
+        $payload = self::base64UrlEncode($payload);
+
+        // Create Signature using HMAC SHA256 with a secret key (JWT_SECRET)
+        $signature = hash_hmac("sha256", $header . "." . $payload, JWT_SECRET, true);
+        $signature = self::base64UrlEncode($signature);
+
+        // Concatenate header, payload, and signature to form the JWT
+        $jwt = $header . "." . $payload . "." . $signature;
+
+        return $jwt;
+    }
+    // (Other methods like validate, base64UrlEncode, base64UrlDecode would also be present)
+}
+\end{lstlisting}
+
+\subsubsection{Protected Routes}
+\label{sec:protected_routes}
+To ensure that only authenticated and authorized users can access sensitive data and functionalities, various API endpoints are designated as 'protected routes'. Access to these routes is strictly controlled. Before processing any request to a protected endpoint, the backend invokes a \texttt{verify\_auth.php} script (or similar middleware logic). This script is responsible for extracting the JWT from the \texttt{Authorization} header of the incoming request and validating it. The validation process involves checking the token's signature, ensuring it hasn't been tampered with, and verifying its expiration time. If the token is valid, the script decodes its payload to retrieve the user's identity and roles. Based on this information, the system then performs an authorization check to determine if the authenticated user has the necessary permissions to access the requested resource. If the token is invalid or the user lacks authorization, the request is rejected with an appropriate error response (e.g., HTTP 401 Unauthorized or 403 Forbidden).
+
+\subsubsection{OAuth 2.0 Flow}
+\label{sec:oauth2_flow}
+To enhance user convenience and leverage existing identity providers, the application integrates OAuth 2.0 for social logins, specifically with Google and Facebook. The OAuth 2.0 flow typically involves the following steps:
+\begin{enumerate}
+    \item \textbf{Client Redirection:} When a user chooses to log in with Google or Facebook on the frontend, they are redirected to the respective social media provider's authorization server.
+    \item \textbf{User Authorization:} The user grants permission to our application to access their basic profile information on the social media platform.
+    \item \textbf{Authorization Grant:} The social media provider redirects the user back to our frontend with an authorization grant (e.g., an authorization code).
+    \item \textbf{Token Exchange (Frontend to Backend):} The frontend then sends this authorization grant to a specific backend endpoint (e.g., \texttt{api/google.php} or \texttt{api/facebook.php}).
+    \item \textbf{Token Verification (Backend to Provider):} The backend, acting as a confidential client, exchanges this authorization grant with the social media provider's token endpoint for an access token and often an ID token. The backend then verifies the authenticity of these tokens with the social media provider.
+    \item \textbf{User Session Creation:} Upon successful verification, the backend either creates a new user account in our database (if it's a first-time login) or retrieves the existing user's details. Finally, it generates and sends back our application's internal JWT to the frontend, establishing a secure user session.
+\end{enumerate}
+This process allows users to log in seamlessly without directly sharing their social media credentials with our application, relying instead on the secure OAuth 2.0 protocol.
+
+\subsubsection{File Uploads}
+\label{sec:file_uploads}
+The application supports file uploads, primarily for user profile pictures, vendor images, and event banner images. This functionality is handled through a dedicated API endpoint, such as \texttt{api/upload\_image.php}. The process involves:
+\begin{enumerate}
+    \item \textbf{Frontend Submission:} The frontend sends the image file as part of a multipart/form-data request to the upload endpoint.
+    \item \textbf{Server-Side Validation:} Upon receiving the file, the backend performs rigorous validation checks. This includes verifying the file type (e.g., ensuring it's an allowed image format like JPEG or PNG), checking the file size against predefined limits, and scanning for potential malicious content. This step is crucial for security to prevent the upload of harmful files.
+    \item \textbf{Secure Storage:} If the file passes all validation checks, it is assigned a unique, randomized filename to prevent naming conflicts and directory traversal attacks. The file is then securely stored in a designated \texttt{uploads/} directory on the server. The path or filename is then saved in the database, associated with the relevant user, vendor, or event record.
+    \item \textbf{Response:} The backend responds to the frontend with the URL or identifier of the uploaded image, which the frontend can then use to display the image.
+\end{enumerate}
+This structured approach to file uploads ensures both functionality and security, protecting the server from potential vulnerabilities associated with user-generated content.
+
+\section{Frontend Implementation (React \& TypeScript)}
+\label{sec:frontend_implementation}
+The frontend of the application is a modern Single-Page Application (SPA) built with React and TypeScript, providing a dynamic, responsive, and intuitive user experience. The choice of React facilitates a component-based development approach, while TypeScript enhances code quality and maintainability.
+
+\subsection{Project Setup \& Structure}
+\label{sec:frontend_project_structure}
+The frontend project is organized to promote modularity and ease of development. Key directories include:
+\begin{itemize}
+    \item \texttt{src/components/}: Contains reusable UI components that are independent and can be used across different parts of the application. This includes generic UI elements (e.g., buttons, input fields in \texttt{components/ui/}) and more specific components (e.g., \texttt{FacebookLoginButton.tsx}).
+    \item \texttt{src/contexts/}: Houses React Context API providers, which are used for global state management, such as authentication status.
+    \item \texttt{src/pages/}: Contains the main page components of the application, each corresponding to a specific route (e.g., \texttt{Login.tsx}, \texttt{Dashboard.tsx}, \texttt{EventList.tsx}). These pages compose various smaller components to form complete views.
+    \item \texttt{src/services/}: Encapsulates the logic for making API calls to the backend. This separation ensures that network requests are centralized and can be easily managed and modified.
+    \item \texttt{src/utils/}: Provides utility functions and helper modules that are used across the application.
+\end{itemize}
+This structure ensures a clear separation of concerns, making the codebase highly organized, testable, and scalable.
+
+\subsection{State Management with AuthContext}
+\label{sec:state_management_authcontext}
+In a React application, managing the state (data that changes over time) is crucial. For global application-wide state, such as the user's authentication status and JWT, the React Context API is utilized through \texttt{AuthContext.tsx}. This approach provides a centralized way to manage and share authentication-related data across the entire component tree without having to manually pass props down through every level (a problem known as "prop drilling").
+
+The \texttt{AuthContext} typically provides an \texttt{AuthProvider} component that wraps the root of the application. This provider holds the authentication state (e.g., \texttt{isAuthenticated}, \texttt{user}, \texttt{token}) and provides methods to update this state (e.g., \texttt{login}, \texttt{logout}). Any component within the \texttt{AuthProvider}'s tree can then consume this context to access the authentication state or trigger authentication actions. This simplifies state management, making the application more predictable and easier to debug, especially when dealing with user sessions and protected routes.
+
+\begin{lstlisting}[caption={Code Snippet 4.3: Simplified \texttt{AuthContext.tsx} demonstrating global authentication state management using React Context API.},label={lst:authcontext},language=TypeScript]
+// src/contexts/AuthContext.tsx (Simplified Example)
+import React, { createContext, useState, useContext,
+ReactNode } from 'react';
+
+interface AuthContextType {
+    isAuthenticated: boolean;
+    user: any; // Or a more specific User type
+    token: string | null;
+    login: (token: string, userData: any) => void;
+    logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType |
+undefined>(undefined);
+
+interface AuthProviderProps {
+    children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({
+    children }) => {
+    const [isAuthenticated, setIsAuthenticated] =
+    useState<boolean>(false);
+    const [user, setUser] = useState<any>(null);
+    const [token, setToken] = useState<string | null>(null);
+
+    const login = (newToken: string, userData: any) => {
+        setIsAuthenticated(true);
+        setUser(userData);
+        setToken(newToken);
+        localStorage.setItem('jwt_token', newToken); // Persist token
+        localStorage.setItem('user_data',
+        JSON.stringify(userData)); // Persist user data
+    };
+
+    const logout = () => {
+        setIsAuthenticated(false);
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('user_data');
+    };
+
+    // On initial load, check for existing token in localStorage
+    React.useEffect(() => {
+        const storedToken = localStorage.getItem('jwt_token');
+        const storedUser = localStorage.getItem('user_data');
+        if (storedToken && storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                setIsAuthenticated(true);
+                setUser(userData);
+                setToken(storedToken);
+            } catch (error) {
+                console.error('Failed to parse stored user data:',
+                error);
+                logout(); // Clear invalid data
+            }
+        }
+    }, []);
+
+    return (
+        <AuthContext.Provider value={{ isAuthenticated, user,
+        token, login, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
+};
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an
+        AuthProvider');
+    }
+    return context;
+};
+\end{lstlisting}
+
+\subsection{Communicating with the Backend (Services)}
+\label{sec:communicating_backend}
+The \texttt{services/} directory in the frontend project is dedicated to handling all communication with the backend API. This separation of concerns ensures that the logic for making network requests is centralized, making it easier to manage API endpoints, handle errors, and update request mechanisms without affecting the UI components. Libraries like \texttt{axios} or the native \texttt{fetch} API are typically used for this purpose.
+
+For instance, \texttt{AuthService.ts} would contain functions responsible for user authentication-related API calls, such as \texttt{login}, \texttt{signup}, \texttt{forgotPassword}, and \texttt{resetPassword}. These service functions encapsulate the details of constructing HTTP requests (e.g., setting headers, formatting request bodies) and processing API responses. They often return Promises, allowing the calling components to handle asynchronous operations and potential errors gracefully.
+
+Below is a simplified example of a \texttt{login} function within \texttt{AuthService.ts}, demonstrating how it interacts with the backend API:
+
+\begin{lstlisting}[caption={Code Snippet 4.4: Simplified \texttt{login} function from \texttt{AuthService.ts}, demonstrating frontend communication with the backend API.},label={lst:authservice_login},language=TypeScript]
+// src/services/AuthService.ts (Simplified Example)
+import axios from 'axios';
+
+const API_URL = 'http://localhost:8000/api/'; // Replace with
+your actual backend API URL
+
+const AuthService = {
+    login: async (email: string, password: string) => {
+        try {
+            const response = await axios.post(`${API_URL}login.php`, {
+                email,
+                password,
+            });
+            // Assuming the backend returns a JWT token and user data
+            // upon successful login
+            if (response.data.success && response.data.token) {
+                // You might want to store the token and user data in
+                // local storage or context here
+                return response.data; // Contains token and user info
+            } else {
+                throw new Error(response.data.message || 'Login
+                failed');
+            }
+        } catch (error: any) {
+            console.error('Login API error:', error.response?.data ||
+            error.message);
+            throw new Error(error.response?.data?.message || 'Network
+            error or unexpected issue during login.');
+        }
+    },
+    // Other authentication-related functions like signup, logout,
+    // etc.
+};
+export default AuthService;
+\end{lstlisting}
+
+\subsection{UI Components and Pages}
+\label{sec:ui_components_pages}
+The frontend application is structured around a component-based architecture, a core principle of React. This approach promotes reusability, maintainability, and a clear separation of concerns. Generic, reusable UI elements (e.g., \texttt{Button}, \texttt{Input}, \texttt{Card}) are housed in the \texttt{components/ui} directory. These components are designed to be highly customizable and can be used across various pages, ensuring a consistent look and feel throughout the application.
+
+The \texttt{pages/} directory contains the main views of the application, each typically corresponding to a specific route. For navigation, \texttt{react-router-dom} (a popular routing library for React) is used to map URLs to these page components. This allows for seamless navigation within the single-page application without full page reloads, providing a smooth user experience.
+
+Each page component (e.g., \texttt{Login.tsx}, \texttt{Dashboard.tsx}, \texttt{EventList.tsx}, \texttt{AdminDashboard.tsx}, \texttt{Profile.tsx}) is responsible for orchestrating the display of various UI components and fetching data from the backend via the \texttt{services/} layer. Below are illustrative screenshots of key user interfaces within the application, demonstrating the design and functionality:
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{login Desktop.png} % Replace with your image path
+    \caption{The user login page (\texttt{pages/Login.tsx}), featuring fields for email and password, traditional login, and social login options via Google and Facebook for enhanced user convenience.}
+    \label{fig:user_login_page}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{dashboard.png} % Replace with your image path
+    \caption{The main user dashboard (\texttt{pages/Dashboard.tsx}) displayed after successful login. It provides an overview of upcoming events, recent activities, and quick access links to manage profiles and events, designed for intuitive navigation.}
+    \label{fig:user_dashboard}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{events.png} % Replace with your image path
+    \caption{The event listing page (\texttt{pages/events/EventList.tsx}), showcasing a clear and organized display of various events. Each event entry includes essential details like title, date, location, and options to view more details or manage the event.}
+    \label{fig:event_listing_page}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{admindaschboard.png} % Replace with your image path
+    \caption{The administrator's dashboard (\texttt{pages/Admin/AdminDashboard.tsx}), offering a centralized control panel for system oversight. It provides administrators with tools to manage users, events, and vendors, ensuring efficient system administration.}
+    \label{fig:admin_dashboard}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Profile.png} % Replace with your image path
+    \caption{The user profile page (\texttt{pages/Profile.tsx}), where users can view and update their personal information. This page includes editable fields for details such as name, email, and password, with a clear call to action for saving changes.}
+    \label{fig:user_profile_page}
+\end{figure}
+
+\chapter{Testing and Evaluation}
+\label{chap:testing_evaluation}
+Testing and evaluation are critical phases in the software development lifecycle, ensuring that the application functions as intended, meets its requirements, and is robust and secure. This chapter details the methodologies employed to test both the backend API and the frontend user interface, along with an assessment of the implemented security measures.
+
+\section{API Endpoint Testing}
+\label{sec:api_endpoint_testing}
+The backend RESTful API was rigorously tested to ensure the correct functionality of each endpoint, proper data handling, and adherence to HTTP protocols. A popular API testing tool, Postman, was extensively used for this purpose. Postman allows developers to send various types of HTTP requests (GET, POST, PUT, DELETE) to API endpoints and inspect the responses, including status codes, headers, and response bodies.
+
+For each API endpoint, a series of test cases were executed:
+\begin{itemize}
+    \item \textbf{Positive Tests:} Valid requests were sent to verify that the API returned the expected data and appropriate success status codes (e.g., 200 OK, 201 Created).
+    \item \textbf{Negative Tests:} Invalid requests were sent to test error handling. This included sending requests with missing or malformed parameters, incorrect data types, or unauthorized access attempts. The API was expected to return appropriate error status codes (e.g., 400 Bad Request, 401 Unauthorized, 404 Not Found, 403 Forbidden) and informative error messages.
+    \item \textbf{Authentication and Authorization Tests:} Protected endpoints were tested by sending requests both with and without valid JWTs in the \texttt{Authorization} header. This confirmed that only authenticated and authorized users could access sensitive resources.
+    \item \textbf{Data Integrity Tests:} After performing CRUD operations (Create, Update, Delete), the database was queried directly to ensure that data was correctly stored, modified, or removed, maintaining data consistency.
+\end{itemize}
+For example, to test a protected endpoint like \texttt{GET /api/events.php}, a request was configured in Postman to include a valid JWT obtained from a prior login. The expected outcome was a 200 OK status code and a JSON array containing event data. Conversely, sending the same request without a JWT or with an expired/invalid JWT was expected to result in a 401 Unauthorized response.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{events.php.png} % Replace with your image path
+    \caption{A Postman window demonstrating a successful GET request to a protected API endpoint (\texttt{/api/events.php}). The request includes a valid JWT in the Authorization header, and the response shows a 200 OK status with the expected JSON data, confirming proper API functionality and authentication.}
+    \label{fig:postman_request}
+\end{figure}
+
+\section{Frontend Manual Testing (UAT)}
+\label{sec:frontend_manual_testing}
+User Acceptance Testing (UAT) for the frontend application was primarily conducted through manual testing, simulating real-world user interactions to ensure that all features function correctly from an end-user perspective and meet the specified requirements. This involved systematically navigating through the application and performing various user flows.
+
+Key user flows and functionalities tested include:
+\begin{itemize}
+    \item \textbf{User Registration and Login:} Thorough testing of the registration process, including validation of input fields, successful account creation, and both traditional email/password login and social logins via Google and Facebook. This also covered scenarios like incorrect credentials and password recovery.
+    \item \textbf{Event Creation and Management:} Testing the complete lifecycle of an event, from creation (entering all event details, uploading banner images) to viewing, editing, and deleting events. This ensured that all CRUD operations for events were fully functional and data was accurately reflected.
+    \item \textbf{Vendor Profile Management:} Verification of vendor registration, creation of detailed vendor profiles, and the ability to update service descriptions, contact information, and images. This confirmed that vendors could effectively showcase their offerings.
+    \item \textbf{Request Management:} Testing the process of event organizers sending service requests to vendors, and vendors receiving, reviewing, and responding to these requests (accepting or declining). This ensured the communication and coordination mechanisms were robust.
+    \item \textbf{Admin Functionalities:} Comprehensive testing of the administrator dashboard, including user management (creating, editing, deleting users, assigning roles), event oversight, and vendor management. This verified that administrators had the necessary control and visibility over the platform.
+    \item \textbf{Responsiveness and Cross-Browser Compatibility:} The application was tested on various devices (desktop, tablet, mobile) and different web browsers (Chrome, Firefox, Edge) to ensure that the user interface adapted correctly and remained fully functional across diverse viewing environments.
+\end{itemize}
+Each user interaction was meticulously checked for correct behavior, visual accuracy, and a smooth user experience. Any discrepancies or bugs identified during UAT were documented and addressed promptly, ensuring a high-quality final product.
+
+\section{Security Evaluation}
+\label{sec:security_evaluation}
+Beyond functional correctness, the security of the application was a critical aspect of the evaluation. Several measures were implemented and assessed to protect user data and prevent unauthorized access.
+\begin{itemize}
+    \item \textbf{Authentication:} The implementation of JWT for API authentication was thoroughly evaluated. This included testing token generation, validation, and expiration. It was confirmed that all protected API endpoints correctly rejected requests without a valid JWT or with an expired/tampered token. The OAuth 2.0 integration was also verified to ensure secure delegation of authentication through Google and Facebook.
+    \item \textbf{Authorization:} Role-based access control (RBAC) was implemented to ensure that users could only access functionalities and data commensurate with their assigned roles (Admin, User, Vendor). Testing confirmed that, for example, a regular user could not access administrator-only features or modify events created by other users.
+    \item \textbf{Data Validation:} Server-side data validation was implemented at the API level to prevent invalid or malicious data from entering the database. This included checks for data types, formats, lengths, and the presence of required fields. This measure is crucial in mitigating common web vulnerabilities such as SQL injection (by using prepared statements in database queries) and Cross-Site Scripting (XSS) by sanitizing user inputs.
+    \item \textbf{CORS (Cross-Origin Resource Sharing):} The \texttt{config/cors.php} file on the backend was configured to control which origins are permitted to make requests to the API. This prevents unauthorized websites from making cross-origin requests to the API, adding a layer of security against certain types of web attacks.
+    \item \textbf{Password Security:} User passwords are not stored in plain text. Instead, they are securely hashed using strong, one-way cryptographic algorithms (e.g., \texttt{password\_hash()} in PHP) before being stored in the database. This protects user credentials even if the database is compromised.
+\end{itemize}
+Overall, the security evaluation confirmed that the application incorporates essential security practices to safeguard data and maintain the integrity of the system.
+
+\chapter{Conclusion and Future Work}
+\label{chap:conclusion_future_work}
+
+\section{Conclusion}
+\label{sec:conclusion}
+This bachelor project successfully designed, developed, and tested a comprehensive full-stack web application for event and vendor management. The application effectively addresses the critical need for a centralized, integrated platform to streamline event planning and foster efficient collaboration between event organizers and service providers. By leveraging modern web technologies such as PHP for a robust RESTful API, React and TypeScript for a dynamic and responsive frontend, and MySQL for reliable data storage, the project has delivered a functional and user-friendly solution.
+
+The core objectives outlined in Chapter 1 have been successfully achieved:
+\begin{itemize}
+    \item A secure and scalable RESTful API was developed, capable of managing users, events, vendors, and service requests with high efficiency.
+    \item A robust authentication system was implemented, supporting both traditional email/password logins and convenient social media integrations (Google/Facebook OAuth 2.0), along with secure password recovery mechanisms.
+    \item A modern, responsive, and intuitive Single-Page Application (SPA) was built, providing a seamless user experience across various devices.
+    \item Distinct user roles (Admin, User, Vendor) with appropriate permissions were established, ensuring secure and controlled access to functionalities.
+    \item Comprehensive security measures, including JWT-based authentication, role-based authorization, server-side data validation, and CORS configuration, were integrated to safeguard application data and user privacy.
+\end{itemize}
+Through rigorous testing, including API endpoint validation and extensive frontend manual testing, the application demonstrated its functionality, reliability, and adherence to design specifications. The project not only showcases technical proficiency in full-stack development but also provides a practical solution to real-world challenges in event coordination.
+
+\section{Challenges Faced}
+\label{sec:challenges_faced}
+Throughout the development process, several technical challenges were encountered, providing valuable learning experiences and opportunities for problem-solving:
+\begin{itemize}
+    \item \textbf{Configuring the OAuth 2.0 Flow:} Integrating OAuth 2.0 for Google and Facebook logins proved to be particularly complex. Understanding the intricacies of authorization codes, access tokens, and securely verifying user identities with third-party providers required careful attention to documentation and precise implementation. Ensuring secure communication between the frontend, backend, and the OAuth providers was a significant hurdle that was successfully overcome through diligent debugging and adherence to security best practices.
+    \item \textbf{Managing Global Authentication State in React:} Initially, managing the user's authentication status and JWT across various components in the React frontend presented challenges related to prop drilling and maintaining a consistent state. This was effectively resolved by implementing the React Context API (specifically \texttt{AuthContext}). This solution centralized the authentication state, making it easily accessible to any component that needed it without cumbersome prop passing, significantly improving code organization and maintainability.
+    \item \textbf{Ensuring Robust Server-Side Validation:} Developing comprehensive server-side validation for all incoming API requests was crucial for security and data integrity. This involved meticulously defining validation rules for various data types, handling edge cases, and providing clear error responses to the frontend. This iterative process ensured that the backend was resilient against invalid or malicious inputs.
+\end{itemize}
+
+\section{Future Work}
+\label{sec:future_work}
+While the current application provides a solid foundation for event and vendor management, there are several avenues for future enhancements and expansions to further enrich its functionality and user experience:
+\begin{itemize}
+    \item \textbf{Real-time Notifications:} Implementing WebSockets could enable real-time communication features, such as instant notifications for new service requests, status updates on events, or chat functionalities between organizers and vendors. This would significantly enhance user engagement and responsiveness.
+    \item \textbf{Payment Integration:} Integrating with popular payment gateways like Stripe or PayPal would allow for direct processing of event ticketing payments or vendor service fees within the application. This would provide a complete end-to-end solution for financial transactions related to events.
+    \item \textbf{Advanced Search and Filtering:} Enhancing the search capabilities for events and vendors with more advanced filtering options (e.g., by location radius, specific service types, availability, price range) would improve discoverability and user efficiency.
+    \item \textbf{Mobile Responsiveness and Native Mobile Applications:} While the current frontend is responsive, further optimizing the UI/UX for mobile devices and potentially developing native iOS and Android applications would significantly broaden the application's reach and accessibility.
+    \item \textbf{Deployment and Scalability:} Migrating the application from a local development environment (e.g., XAMPP/LAMP stack) to a cloud hosting provider (such as AWS, Google Cloud Platform, or DigitalOcean) would enable robust deployment, improved scalability, and higher availability for a production environment.
+    \item \textbf{User Review and Rating System:} Implementing a system where event organizers can leave reviews and ratings for vendors, and vice-versa, would foster trust and provide valuable feedback for the community.
+    \item \textbf{Calendar Integration:} Allowing users to integrate their event schedules with external calendar applications (e.g., Google Calendar, Outlook Calendar) would improve personal organization and reminders.
+\end{itemize}
+These proposed future enhancements would build upon the current successful implementation, transforming the application into an even more powerful and indispensable tool for the event and vendor management ecosystem.
+
+\chapter*{References} % Unnumbered chapter
+\addcontentsline{toc}{chapter}{References} % Add to ToC manually
+(This section will be populated with citations for any external libraries, frameworks, tools, academic papers, or articles referenced throughout the report. Ensure to use a consistent citation style, e.g., APA, MLA, Chicago.)
+
+\chapter*{Appendices} % Unnumbered chapter
+\addcontentsline{toc}{chapter}{Appendices} % Add to ToC manually
+(Optional: This section can include supplementary materials that are too detailed for the main body of the report but are relevant for completeness. Examples include:
+\begin{itemize}
+    \item \textbf{Full Database Schema:} The complete \texttt{database.sql} file.
+    \item \textbf{Detailed Code Listings:} Longer code snippets or full file contents that were only partially shown in Chapter 4.
+    \item \textbf{Testing Logs:} Comprehensive logs from API or frontend testing.
+    \item \textbf{User Manual/Guide:} A brief guide on how to use the application.
+    \item \textbf{Deployment Instructions:} Steps for setting up and deploying the application.
+\end{itemize}
+
+\end{document}
