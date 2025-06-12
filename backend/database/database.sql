@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 02, 2025 at 02:22 PM
+-- Generation Time: Jun 12, 2025 at 06:23 PM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -40,7 +40,7 @@ CREATE TABLE `admin` (
 --
 
 INSERT INTO `admin` (`id_admin`, `name`, `email`, `password`, `creation_date`) VALUES
-(1, 'Admin User', 'admin@venuvibe.com', '$2y$10$3tV8Qz6kXz9y7n1m2o3p4u5v6w7x8y9z0a1b2c3d4e5f6g7h8i9j0', '2025-06-01 10:47:33');
+(5, 'admin', 'admin@venuvibe.com', '$2y$10$l0E8l.zbuM9CNUHmphyw0.kwHpc5/lAi5eRcvvyzBAXQeN8neLmuO', '2025-06-10 11:46:23');
 
 -- --------------------------------------------------------
 
@@ -108,8 +108,9 @@ INSERT INTO `event` (`id_event`, `title`, `event_date`, `location`, `banner_imag
 (32, 'Happy Birthday', '2025-06-11', 'Tangier', NULL, '', 'Planned', 454, 9999.00, '2025-06-01 14:30:31', 1, 2),
 (33, 'Birthday', '2025-06-12', 'Tangier', NULL, '', 'Planned', 33, 4500.00, '2025-06-01 19:34:40', 1, 2),
 (34, 'Abdelhay', '2025-06-01', 'Snowy Pines Lodge, CO', NULL, '', 'Planned', 250, 5000.00, '2025-06-01 21:10:00', 1, 3),
-(35, 'Ahmed Birthday', '2025-06-13', 'Snowy Pines Lodge, CO', NULL, '', 'Planned', 45, 1000.00, '2025-06-01 21:42:23', 2, 2),
-(36, 'Abdelhay', '2025-06-29', 'Tangier', NULL, '', 'Planned', 50, 4999.00, '2025-06-01 22:30:54', 2, 2);
+(35, 'Ahmed Birthday', '2025-06-13', 'Snowy Pines Lodge, CO', NULL, '', 'Ongoing', 45, 1000.00, '2025-06-01 21:42:23', 2, 2),
+(36, 'Abdelhay', '2025-06-29', 'Tangier', NULL, '', 'Planned', 50, 4999.00, '2025-06-01 22:30:54', 2, 2),
+(37, 'abdelhay wedding', '2025-06-09', 'tangier', NULL, '', 'Planned', 454, 6000.00, '2025-06-02 20:09:13', 2, 1);
 
 -- --------------------------------------------------------
 
@@ -134,8 +135,8 @@ CREATE TABLE `request` (
 
 INSERT INTO `request` (`id_request`, `title`, `description`, `deadline`, `status`, `id_event`, `id_transaction`, `id_vendor`) VALUES
 (10, 'Confirm details with Elite Catering', NULL, NULL, 'In Progress', 24, 33, 1),
-(11, 'Confirm details with Starlight Decor', NULL, NULL, 'Open', 24, 34, 2),
-(12, 'Confirm details with Bliss Photography', NULL, NULL, 'Open', 24, 35, 4),
+(11, 'Confirm details with Starlight Decor', NULL, NULL, 'In Progress', 24, 34, 2),
+(12, 'Confirm details with Bliss Photography', NULL, NULL, 'Cancelled', 24, 35, 4),
 (13, 'Confirm details with Tasty Treats', NULL, NULL, 'In Progress', 28, 4, 6),
 (14, 'Confirm details with Bright Lights', NULL, NULL, 'Completed', 28, 5, 7),
 (15, 'Confirm details with Pure Elegance', NULL, NULL, 'Completed', 28, 6, 8),
@@ -153,7 +154,12 @@ INSERT INTO `request` (`id_request`, `title`, `description`, `deadline`, `status
 (33, 'Confirm details with Starlight Decor', NULL, NULL, 'Open', 11, 24, 2),
 (34, 'Confirm details with Bliss Photography', NULL, NULL, 'Open', 11, 25, 4),
 (42, 'Photography', NULL, NULL, 'Open', 28, 36, 3),
-(43, 'Photography', NULL, NULL, 'Open', 15, 37, 4);
+(43, 'Photography', NULL, NULL, 'Open', 15, 37, 4),
+(44, '', NULL, NULL, 'Completed', 37, 38, NULL),
+(45, 'Confirm details with Starlight Decor', NULL, NULL, 'Completed', 37, 39, 2),
+(46, 'Confirm details with Harmony Music', NULL, NULL, 'Open', 37, 40, 3),
+(47, 'Confirm details with Bliss Photography', NULL, NULL, 'Open', 37, 41, 4),
+(48, 'photography', NULL, NULL, 'Open', 15, 42, 17);
 
 -- --------------------------------------------------------
 
@@ -193,7 +199,12 @@ INSERT INTO `transaction` (`id_transaction`, `amount`, `transaction_date`, `id_e
 (34, 500.00, '2025-06-01 14:20:13', 24),
 (35, 400.00, '2025-06-01 14:20:13', 24),
 (36, 1200.00, '2025-06-01 22:09:10', 28),
-(37, 800.00, '2025-06-01 22:09:24', 15);
+(37, 800.00, '2025-06-01 22:09:24', 15),
+(38, 1500.00, '2025-06-02 20:09:13', 37),
+(39, 1000.00, '2025-06-02 20:09:13', 37),
+(40, 1200.00, '2025-06-02 20:09:13', 37),
+(41, 800.00, '2025-06-02 20:09:13', 37),
+(42, 1300.00, '2025-06-12 18:20:30', 15);
 
 -- --------------------------------------------------------
 
@@ -431,7 +442,7 @@ ALTER TABLE `vendor_type`
 -- AUTO_INCREMENT for table `admin`
 --
 ALTER TABLE `admin`
-  MODIFY `id_admin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_admin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `client`
@@ -443,19 +454,19 @@ ALTER TABLE `client`
 -- AUTO_INCREMENT for table `event`
 --
 ALTER TABLE `event`
-  MODIFY `id_event` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id_event` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `request`
 --
 ALTER TABLE `request`
-  MODIFY `id_request` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+  MODIFY `id_request` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- AUTO_INCREMENT for table `transaction`
 --
 ALTER TABLE `transaction`
-  MODIFY `id_transaction` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id_transaction` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT for table `type`

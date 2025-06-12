@@ -4,7 +4,7 @@
  */
 
 // Authentication settings
-define('JWT_SECRET', 'your_jwt_secret_key'); // This will be overridden by environment variable in Docker
+define('JWT_SECRET', '4b48ff8c31ba999fb73fd12310cfc2c1'); // md5 hash value of "abdelhay_pfe_venuvibe"
 define('JWT_EXPIRATION', 3600); // Token expiration time in seconds (1 hour)
 define('PASSWORD_RESET_EXPIRATION', 1800); // Password reset token expiration (30 minutes)
 

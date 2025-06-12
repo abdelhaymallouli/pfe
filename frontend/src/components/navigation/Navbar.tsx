@@ -69,12 +69,6 @@ export const Navbar = () => {
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {currentUser ? (
               <>
-                <button
-                  className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                  aria-label="Notifications"
-                >
-                  <Bell className="h-6 w-6" />
-                </button>
                 <div className="ml-3 relative">
                   <div>
                     <button
