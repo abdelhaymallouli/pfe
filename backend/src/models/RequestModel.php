@@ -1,3 +1,4 @@
+```php
 <?php
 // backend/src/models/RequestModel.php
 class RequestModel {
@@ -11,9 +12,10 @@ class RequestModel {
     public function getByEventId(int $id_event) {
         try {
             $sql = "SELECT r.id_request, r.title, r.description, r.deadline, r.status, 
-                           r.id_vendor, t.amount, t.transaction_date
+                           r.id_vendor, t.amount, t.transaction_date, v.name AS vendor_name
                     FROM {$this->table} r
                     LEFT JOIN transaction t ON r.id_transaction = t.id_transaction
+                    LEFT JOIN vendor v ON r.id_vendor = v.id_vendor
                     WHERE r.id_event = :id_event";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([':id_event' => $id_event]);
@@ -27,7 +29,8 @@ class RequestModel {
                     'status' => $request['status'],
                     'id_vendor' => $request['id_vendor'] ? (int)$request['id_vendor'] : null,
                     'amount' => $request['amount'] ? (float)$request['amount'] : null,
-                    'transaction_date' => $request['transaction_date']
+                    'transaction_date' => $request['transaction_date'],
+                    'vendor_name' => $request['vendor_name'] ?? null
                 ];
             }, $requests);
         } catch (Exception $e) {
@@ -73,7 +76,7 @@ class RequestModel {
         }
     }
 
-        public function updateRequest($data) {
+    public function updateRequest($data) {
         try {
             $this->pdo->beginTransaction();
 
@@ -119,7 +122,7 @@ class RequestModel {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
 
-            // Handle transaction amount update if present (existing logic)
+            // Handle transaction amount update if present
             if (isset($data['amount'])) {
                 if ($request['id_transaction']) {
                     $sql = "UPDATE transaction 
@@ -162,7 +165,6 @@ class RequestModel {
             throw $e;
         }
     }
-
 
     public function deleteRequest(int $id_request, int $id_event) {
         try {

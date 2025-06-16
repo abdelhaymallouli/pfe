@@ -40,26 +40,24 @@ export const VendorList = () => {
           console.error('Response status:', response.status, 'Raw response:', text);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const text = await response.text();
-        console.log('Raw response:', text);
         let data;
         try {
-          data = JSON.parse(text);
+          data = await response.json();
         } catch (err) {
           throw new Error('Invalid JSON response');
         }
         if (!Array.isArray(data)) {
           throw new Error('Expected an array of vendors');
         }
-        const formattedVendors = data.map((vendor: any) => ({
+        const formattedVendors: Vendor[] = data.map((vendor: any) => ({
           id: vendor.id || '',
           name: vendor.name || 'Unknown Vendor',
           category: vendor.category || '', // Expect comma-separated string
           description: vendor.description || 'No description available',
           rating: parseFloat(vendor.rating) || 0,
           price: vendor.price ? `$${Number(vendor.price).toFixed(2)}` : '$0.00',
-          contactEmail: vendor.contactEmail || '',
-          contactPhone: vendor.contactPhone || '',
+          contactEmail: vendor.contact_email || '', // Assuming snake_case from backend
+          contactPhone: vendor.contact_phone || '', // Assuming snake_case from backend
           image: vendor.image || 'https://via.placeholder.com/300x200?text=No+Image',
         }));
         setVendors(formattedVendors);
@@ -68,7 +66,8 @@ export const VendorList = () => {
         const uniqueCategories = Array.from(
           new Set(
             formattedVendors
-              .flatMap(vendor => vendor.category.split(',').map(cat => cat.trim().toLowerCase()))
+              // FIX: Explicitly type 'cat' as string to resolve implicit any error
+              .flatMap(vendor => vendor.category.split(',').map((cat: string) => cat.trim().toLowerCase()))
               .filter(cat => cat)
           )
         ).sort();
@@ -192,7 +191,8 @@ export const VendorList = () => {
                 </div>
               </div>
               <Badge variant="secondary" className="mb-3">
-                {vendor.category ? vendor.category.split(',').map(cat => cat.trim().charAt(0).toUpperCase() + cat.trim().slice(1)).join(', ') : 'No Category'}
+                {/* FIX: Explicitly type 'cat' as string here as well */}
+                {vendor.category ? vendor.category.split(',').map((cat: string) => cat.trim().charAt(0).toUpperCase() + cat.trim().slice(1)).join(', ') : 'No Category'}
               </Badge>
               <p className="text-gray-600 text-sm mb-4">{vendor.description}</p>
               <div className="space-y-2 text-sm">

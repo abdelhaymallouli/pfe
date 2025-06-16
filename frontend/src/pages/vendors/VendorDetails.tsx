@@ -147,7 +147,7 @@ useEffect(() => {
     const [category, amount] = price.split(':');
     return { 
       category: category?.trim() || 'Service', 
-      amount: `$${parseFloat(amount || 0).toFixed(2)}` 
+      amount: `$${parseFloat(amount || '0').toFixed(2)}` 
     };
   }) : [];
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -8,8 +8,6 @@ import { Footer } from './components/navigation/Footer';
 import { Landing } from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
 import { EventList } from './pages/events/EventList';
 import { EventForm } from './pages/events/EventForm';
@@ -29,7 +27,7 @@ import { RequestManagement } from './pages/Admin/RequestManagement';
 import Profile from './pages/Profile';
 
 // Protected Route Wrapper
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children }: { children: ReactNode })  => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
@@ -52,8 +50,6 @@ const UserLayout = () => (
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/events" element={<ProtectedRoute><EventList /></ProtectedRoute>} />
         <Route path="/events/new" element={<ProtectedRoute><EventForm /></ProtectedRoute>} />

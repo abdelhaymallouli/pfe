@@ -64,7 +64,7 @@ const statuses: ('Planned' | 'Ongoing' | 'Completed' | 'Cancelled')[] = ['Planne
           id_client: Number(data.data.id_client),
           id_type: Number(data.data.id_type),
           expected_guests: Number(data.data.expected_guests),
-          budget: Number(data.data.budget)
+          budget: Number(data.data.budget),
         });
       } else {
         throw new Error('Invalid response structure');

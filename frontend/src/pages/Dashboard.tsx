@@ -135,7 +135,7 @@ export const Dashboard = () => {
           status: task.status,
           event_id: event.id,
           amount: task.amount ? parseFloat(task.amount) : null,
-          vendor_name: task.id_vendor ? `Vendor ${task.id_vendor}` : null, // Placeholder, adjust as needed
+          vendor_name: task.vendor_name ? `Vendor ${task.vendor_name}` : null, // Placeholder, adjust as needed
         }));
         allTasks = [...allTasks, ...formattedTasks];
       }

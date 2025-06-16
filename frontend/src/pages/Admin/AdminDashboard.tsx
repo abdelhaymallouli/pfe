@@ -69,57 +69,52 @@ export const AdminDashboard = () => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchDashboardData = async () => {
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        toast.error('Authentication token not found. Please log in again.');
-        navigate('/admin/login');
-        return;
-      }
+const fetchDashboardData = async () => {
+  setIsLoading(true);
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      toast.error('Authentication token not found. Please log in again.');
+      navigate('/admin/login');
+      return;
+    }
 
-      // Fetch dashboard stats
-      const statsResponse = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=dashboard', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const statsResult = await statsResponse.json();
-      if (!statsResponse.ok) throw new Error(statsResult.message || 'Failed to load dashboard data');
+    // Fetch dashboard stats
+    const statsResponse = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=dashboard', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const statsResult = await statsResponse.json();
+    if (!statsResponse.ok) throw new Error(statsResult.message || 'Failed to load dashboard data');
 
-      const statsData = statsResult.data;
-      const totalRevenue = statsData.transactions.reduce(
-        (sum: number, transaction: any) => sum + (parseFloat(transaction.montant) || 0),
-        0
-      );
+    const statsData = statsResult.data;
 
+    // Fetch analytics data
+    const analyticsResponse = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=getAnalytics', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!analyticsResponse.ok) throw new Error(`Failed to fetch analytics: ${analyticsResponse.statusText}`);
+    const analyticsResult = await analyticsResponse.json();
+    if (analyticsResult.success) {
+      setAnalyticsData(analyticsResult.data);
+      // Use total_revenue from analytics data
       setStats({
         totalClients: statsData.clients.length,
         totalEvents: statsData.events.length,
         totalVendors: statsData.vendors.length,
         totalRequests: statsData.requests.length,
         totalTransactions: statsData.transactions.length,
-        totalRevenue,
+        totalRevenue: parseFloat(analyticsResult.data.total_revenue) || 0,
       });
-
-      // Fetch analytics data
-      const analyticsResponse = await fetch('http://localhost/pfe/backend/src/api/admin.php?action=getAnalytics', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!analyticsResponse.ok) throw new Error(`Failed to fetch analytics: ${analyticsResponse.statusText}`);
-      const analyticsResult = await analyticsResponse.json();
-      if (analyticsResult.success) {
-        setAnalyticsData(analyticsResult.data);
-      } else {
-        toast.error(analyticsResult.message || 'Failed to load analytics data');
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load dashboard');
-      if (error.message.includes('Unauthorized')) navigate('/admin/login');
-    } finally {
-      setIsLoading(false);
+    } else {
+      toast.error(analyticsResult.message || 'Failed to load analytics data');
     }
-  };
-
+  } catch (error: any) {
+    toast.error(error.message || 'Failed to load dashboard');
+    if (error.message.includes('Unauthorized')) navigate('/admin/login');
+  } finally {
+    setIsLoading(false);
+  }
+};
   useEffect(() => {
     fetchDashboardData();
   }, [navigate]);

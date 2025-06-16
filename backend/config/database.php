@@ -1,13 +1,12 @@
 <?php
 // backend/config/database.php
 class Database {
-    private $host = "localhost";       // usually localhost for local dev
-    private $db_name = "venuvibe";    // your database name
-    private $username = "root";        // default local MySQL username
-    private $password = "";            // default local MySQL password (empty if none)
+    private $host = "localhost";
+    private $db_name = "venuvibe"; 
+    private $username = "root";       
+    private $password = "";         
     private $conn;
 
-    // Get PDO database connection
     public function getConnection() {
         $this->conn = null;
 
@@ -23,9 +22,8 @@ class Database {
                 ]
             );
         } catch (PDOException $e) {
-            // Log error instead of outputting it
             error_log("Database connection failed: " . $e->getMessage());
-            return null; // Return null to indicate failure
+            return null;
         }
 
         return $this->conn;

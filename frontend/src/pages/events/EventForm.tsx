@@ -42,7 +42,7 @@ const eventSchema = z.object({
   expected_guests: z.string().transform(val => parseInt(val, 10)).refine(val => val >= 0, {
     message: 'Expected guests must be a positive number',
   }),
-  budget: z.string().transform(val => Number(val)).optional().default(0),
+  budget: z.string().transform(val => Number(val)).optional().default('0'),
   image_banniere: z.instanceof(File).optional().nullable(),
 });
 
