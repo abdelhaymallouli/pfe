@@ -13,7 +13,7 @@ export interface Request {
   title: string;
   description: string;
   status: 'Open' | 'In Progress' | 'Completed' | 'Cancelled';
-  amount: number;
+  amount: string;
   transaction_date: string;
   event_title: string;
   client_name: string;
@@ -383,7 +383,7 @@ const getTotalAmount = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Amount</label>
-                  <p className="text-gray-900">{(selectedRequest.amount)}</p>
+                  <p className="text-gray-900">${(selectedRequest.amount)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Status</label>

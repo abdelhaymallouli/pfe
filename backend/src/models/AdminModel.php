@@ -57,21 +57,26 @@ class AdminModel {
     }
 
     // Event Management
-    public function getAllEvents($pdo, $limit = null, $offset = null) {
-        $sql = "SELECT e.id_event, e.id_client, e.title, e.event_date AS date, e.location, e.status, e.budget, e.expected_guests, e.description, c.name AS client_name, t.type_name 
-                FROM event e 
-                LEFT JOIN client c ON e.id_client = c.id_client 
-                LEFT JOIN type t ON e.id_type = t.id_type";
-        $params = [];
-        if ($limit !== null && $offset !== null) {
-            $sql .= " LIMIT ? OFFSET ?";
-            $params[] = $limit;
-            $params[] = $offset;
-        }
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+public function getAllEvents($pdo, $limit = null, $offset = null) {
+    $sql = "SELECT e.id_event, e.id_client, e.title, e.event_date AS date, e.location, e.status, e.budget, e.expected_guests, e.description, 
+                   c.name AS client_name, t.type_name 
+            FROM event e 
+            LEFT JOIN client c ON e.id_client = c.id_client 
+            LEFT JOIN type t ON e.id_type = t.id_type 
+            ORDER BY e.event_date ASC";
+
+    $params = [];
+    if ($limit !== null && $offset !== null) {
+        $sql .= " LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
     }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 
     public function addEvent($pdo, $title, $date, $location, $description, $expected_guests, $budget, $id_client, $id_type) {
         $stmt = $pdo->prepare("INSERT INTO event (title, event_date, location, description, expected_guests, budget, id_client, id_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");

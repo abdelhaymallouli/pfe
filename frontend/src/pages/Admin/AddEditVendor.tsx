@@ -151,131 +151,168 @@ export const AddEditVendor = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-lg font-medium text-gray-900">Loading...</div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
       <Sidebar />
-      <div className="flex-1 ml-64 p-8">
-        <div className="flex items-center mb-6">
-          <Link to="/admin/vendors" className="mr-4">
-            <Button variant="outline" leftIcon={<ArrowLeft size={20} />}>
-              Back to Vendors
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {isEditMode ? 'Edit Vendor' : 'Add New Vendor'}
-          </h1>
-        </div>
+      <div className="flex-1 ml-64 p-6 lg:p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center mb-8">
+            <Link to="/admin/vendors" className="mr-4">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 px-4 py-2 border-gray-300 hover:bg-gray-50"
+              >
+                <ArrowLeft size={20} />
+                Back to Vendors
+              </Button>
+            </Link>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+              {isEditMode ? 'Edit Vendor' : 'Add New Vendor'}
+            </h1>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Vendor Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="text-sm font-medium text-gray-500">Name</label>
-                <Input
-                  type="text"
-                  name="nom"
-                  value={vendor.nom}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Email</label>
-                <Input
-                  type="email"
-                  name="email"
-                  value={vendor.email}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Phone</label>
-                <Input
-                  type="text"
-                  name="phone"
-                  value={vendor.phone}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Category</label>
-                <Input
-                  type="text"
-                  name="category"
-                  value={vendor.category}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Rating (0-5)</label>
-                <Input
-                  type="number"
-                  name="note"
-                  value={vendor.note}
-                  onChange={handleInputChange}
-                  min="0"
-                  max="5"
-                  step="0.1"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Description</label>
-                <textarea
-                  name="description"
-                  value={vendor.description}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Image URL</label>
-                <Input
-                  type="text"
-                  name="image"
-                  value={vendor.image || ''}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Prices by Event Type</label>
-                <div className="space-y-4 mt-2">
-                  {eventTypes.map((type) => (
-                    <div key={type.id_type} className="flex items-center space-x-4">
-                      <span className="w-1/2">{type.type_name}</span>
-                      <Input
-                        type="number"
-                        value={typePrices.find((tp) => tp.id_type === type.id_type)?.price || 0}
-                        onChange={(e) =>
-                          handlePriceChange(type.id_type, parseFloat(e.target.value) || 0)
-                        }
-                        min="0"
-                        step="0.01"
-                        className="w-1/2"
-                      />
-                    </div>
-                  ))}
+          <Card className="shadow-lg">
+            <CardHeader className="border-b border-gray-200">
+              <CardTitle className="text-xl font-semibold text-gray-900">
+                Vendor Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-500">Name</label>
+                    <Input
+                      type="text"
+                      name="nom"
+                      value={vendor.nom}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-gray-300"
+                      placeholder="Enter vendor name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-500">Email</label>
+                    <Input
+                      type="email"
+                      name="email"
+                      value={vendor.email}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-gray-300"
+                      placeholder="Enter vendor email"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-500">Phone</label>
+                    <Input
+                      type="text"
+                      name="phone"
+                      value={vendor.phone}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-gray-300"
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-500">Category</label>
+                    <Input
+                      type="text"
+                      name="category"
+                      value={vendor.category}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-gray-300"
+                      placeholder="Enter vendor category"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-500">Rating (0-5)</label>
+                    <Input
+                      type="number"
+                      name="note"
+                      value={vendor.note}
+                      onChange={handleInputChange}
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      required
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-gray-300"
+                      placeholder="Enter rating"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-500">Image URL</label>
+                    <Input
+                      type="text"
+                      name="image"
+                      value={vendor.image || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-gray-300"
+                      placeholder="Enter image URL"
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="flex justify-end space-x-4">
-                <Link to="/admin/vendors">
-                  <Button variant="outline">Cancel</Button>
-                </Link>
-                <Button type="submit" leftIcon={<Save size={16} />}>
-                  Save Vendor
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-500">Description</label>
+                  <textarea
+                    name="description"
+                    value={vendor.description}
+                    onChange={handleInputChange}
+                    className="w-full p-3 border rounded-md focus:ring-2 focus:ring-gray-300 min-h-[120px]"
+                    placeholder="Enter vendor description"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="text-sm font-medium text-gray-500">Prices by Event Type</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {eventTypes.map((type) => (
+                      <div key={type.id_type} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-md">
+                        <span className="flex-1 text-sm font-medium text-gray-700">{type.type_name}</span>
+                        <Input
+                          type="number"
+                          value={typePrices.find((tp) => tp.id_type === type.id_type)?.price || 0}
+                          onChange={(e) =>
+                            handlePriceChange(type.id_type, parseFloat(e.target.value) || 0)
+                          }
+                          min="0"
+                          step="0.01"
+                          className="w-32 px-3 py-2 border rounded-md focus:ring-2 focus:ring-gray-300"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-4 pt-4">
+                  <Link to="/admin/vendors">
+                    <Button 
+                      variant="outline" 
+                      className="px-4 py-2 border-gray-300 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </Button>
+                  </Link>
+                  <Button 
+                    type="submit" 
+                    className="px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 flex items-center gap-2"
+                    leftIcon={<Save size={16} />}
+                  >
+                    Save Vendor
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

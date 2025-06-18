@@ -60,7 +60,7 @@ const statuses: ('Planned' | 'Ongoing' | 'Completed' | 'Cancelled')[] = ['Planne
       if (data.success && data.data) {
         setEvent({
           ...data.data,
-          id: Number(data.data.id), // Ensure id is a number
+          id: Number(data.data.id),
           id_client: Number(data.data.id_client),
           id_type: Number(data.data.id_type),
           expected_guests: Number(data.data.expected_guests),
