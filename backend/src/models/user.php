@@ -13,7 +13,7 @@ class User {
         $this->conn = $db;
     }
 
-    public function create() {
+public function create() {
         $query = "INSERT INTO " . $this->table_name . " (name, email, password) 
                   VALUES (:name, :email, :password)";
         $stmt = $this->conn->prepare($query);
@@ -27,37 +27,35 @@ class User {
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
+            error_log("User created with ID: " . $this->id); // Debug log
             return true;
         }
 
+        error_log("Failed to create user with email: " . $this->email);
         return false;
     }
 
-    public function emailExists() {
-        $query = "SELECT id_client, name, email, password, creation_date 
-                  FROM " . $this->table_name . " 
-                  WHERE email = :email 
-                  LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $this->email = htmlspecialchars(strip_tags($this->email));
-        $stmt->bindParam(":email", $this->email);
-        $stmt->execute();
+public function emailExists() {
+        try {
+            $query = "SELECT id_client, name FROM " . $this->table_name . " WHERE email = :email LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $this->email = htmlspecialchars(strip_tags($this->email));
+            $stmt->bindParam(':email', $this->email);
+            $stmt->execute();
 
-        if ($stmt->rowCount() > 0) {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            $this->id = $row['id_client'];
-            $this->name = $row['name'];
-            $this->email = $row['email'];
-            $this->password = $row['password'];
-            $this->created_at = $row['creation_date'];
-
-            return true;
+            if ($row) {
+                $this->id_client = $row['id_client'];
+                $this->name = $row['name'];
+                error_log("emailExists found user: id=" . $this->id_client . ", email=" . $this->email);
+                return true;
+            }
+            return false;
+        } catch (PDOException $e) {
+            error_log("emailExists error: " . $e->getMessage());
+            return false;
         }
-
-        return false;
     }
-
     public function getById($id) {
         $query = "SELECT id_client, name, email, creation_date 
                   FROM " . $this->table_name . " 

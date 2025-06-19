@@ -5,7 +5,8 @@
 
 // Authentication settings
 define('JWT_SECRET', '4b48ff8c31ba999fb73fd12310cfc2c1'); // md5 hash value of "abdelhay_pfe_venuvibe"
-define('JWT_EXPIRATION', 3600); // Token expiration time in seconds (1 hour)
+define('JWT_EXPIRATION', 86400);; // Token expiration time in seconds (24 hour)
+error_log("auth_config.php loaded: JWT_SECRET=" . substr(JWT_SECRET, 0, 8) . "...");
 define('PASSWORD_RESET_EXPIRATION', 1800); // Password reset token expiration (30 minutes)
 
 // Email settings for password reset (placeholder - would be configured with real SMTP in production)

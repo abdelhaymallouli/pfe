@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Navbar } from './components/navigation/Navbar';
 import { Footer } from './components/navigation/Footer';
 
@@ -22,12 +23,12 @@ import AdminSettings from './pages/Admin/AdminSettings';
 import { UserManagement } from './pages/Admin/UserManagement';
 import { EventManagement } from './pages/Admin/EventManagement';
 import { VendorManagement } from './pages/Admin/VendorManagement';
-import  {AddEditVendor} from './pages/Admin/AddEditVendor';
+import { AddEditVendor } from './pages/Admin/AddEditVendor';
 import { RequestManagement } from './pages/Admin/RequestManagement';
 import Profile from './pages/Profile';
 
 // Protected Route Wrapper
-const ProtectedRoute = ({ children }: { children: ReactNode })  => {
+const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
@@ -76,8 +77,8 @@ const AdminRoutes = () => (
     <Route path="/admin/vendors" element={<VendorManagement />} />
     <Route path="/admin/requests" element={<RequestManagement />} />
     <Route path="/admin/settings" element={<AdminSettings />} />
-            <Route path="/admin/vendors/add" element={<AddEditVendor />} />
-        <Route path="/admin/vendors/edit/:id" element={<AddEditVendor />} />
+    <Route path="/admin/vendors/add" element={<AddEditVendor />} />
+    <Route path="/admin/vendors/edit/:id" element={<AddEditVendor />} />
     <Route path="*" element={<Navigate to="/admin/login" replace />} />
   </Routes>
 );
@@ -86,23 +87,26 @@ const AdminRoutes = () => (
 function App() {
   const location = useLocation();
   const isAdminPath = location.pathname.startsWith('/admin');
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   return (
-    <AuthProvider>
-      {isAdminPath ? <AdminRoutes /> : <UserLayout />}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#fff',
-            color: '#333',
-          },
-          success: { style: { border: '1px solid #22c55e' } },
-          error: { style: { border: '1px solid #ef4444' } },
-        }}
-      />
-    </AuthProvider>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <AuthProvider>
+        {isAdminPath ? <AdminRoutes /> : <UserLayout />}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#fff',
+              color: '#333',
+            },
+            success: { style: { border: '1px solid #22c55e' } },
+            error: { style: { border: '1px solid #ef4444' } },
+          }}
+        />
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

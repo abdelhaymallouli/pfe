@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import AuthService from '../services/AuthService';
+import OAuthService from '../services/OAuthService';
 
 interface User {
   id: number;
@@ -13,6 +14,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<any>;
   register: (username: string, email: string, password: string, confirmPassword: string) => Promise<any>;
+  googleLogin: (tokenResponse: any) => Promise<any>;
   logout: () => void;
 }
 
@@ -21,6 +23,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const user = AuthService.getCurrentUser();
@@ -43,21 +46,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (username: string, email: string, password: string, confirmPassword: string) => {
-    return AuthService.register(username, email, password, confirmPassword);
+    try {
+      const response = await AuthService.register(username, email, password, confirmPassword);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   };
 
-  const logout = () => {
-    AuthService.logout();
-    setCurrentUser(null);
-    localStorage.removeItem('venuvibe_user');
+  const googleLogin = async (tokenResponse: any) => {
+    try {
+      const response = await OAuthService.googleLogin(tokenResponse);
+      if (response.status === 'success') {
+        setCurrentUser(response.data.user);
+      }
+      return response;
+    } catch (error) {
+      throw error;
+    }
   };
 
+const logout = () => {
+  if (isLoggingOut) return;
+  setIsLoggingOut(true);
+  console.log('Logging out user:', currentUser);
+  setCurrentUser(null);
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  setIsLoggingOut(false);
+};
   const value = {
     currentUser,
     isLoggedIn: !!currentUser,
     loading,
     login,
     register,
+    googleLogin,
     logout,
   };
 

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 12, 2025 at 06:23 PM
+-- Generation Time: Jun 19, 2025 at 07:34 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -61,8 +61,9 @@ CREATE TABLE `client` (
 --
 
 INSERT INTO `client` (`id_client`, `name`, `email`, `password`, `creation_date`) VALUES
-(1, 'admin', 'yassir@gmail.com', '$2y$10$lF5yn2bDbRlZD8WoIRatReealO6Eu7u1WQU0PDNGZ1CNuFrlqYV56', '2025-05-30 18:57:21'),
-(2, 'abdelhay mallouli', 'abdelhay.mallouli.solicode@gmail.com', '$2y$10$iRnaRixiZj8JlrPvDsIYnuOeZ/eOLYJuIwYMZK4Ifp3ReduwsaQjm', '2025-06-01 21:11:34');
+(1, 'abdelhay', 'yassir@gmail.com', '$2y$10$lF5yn2bDbRlZD8WoIRatReealO6Eu7u1WQU0PDNGZ1CNuFrlqYV56', '2025-05-30 18:57:21'),
+(2, 'abdelhay mallouli', 'abdelhay.mallouli.solicode@gmail.com', '$2y$10$iRnaRixiZj8JlrPvDsIYnuOeZ/eOLYJuIwYMZK4Ifp3ReduwsaQjm', '2025-06-01 21:11:34'),
+(3, 'mallouliabdelhay622', 'mallouli.abdelhay.solicode@gmail.com', '$2y$10$DIrsWysWZkocNCPaPVHjwuW7jSmkZFyD23Rqr2TjpfgBzU6aQwlc2', '2025-06-19 14:50:33');
 
 -- --------------------------------------------------------
 
@@ -109,8 +110,30 @@ INSERT INTO `event` (`id_event`, `title`, `event_date`, `location`, `banner_imag
 (33, 'Birthday', '2025-06-12', 'Tangier', NULL, '', 'Planned', 33, 4500.00, '2025-06-01 19:34:40', 1, 2),
 (34, 'Abdelhay', '2025-06-01', 'Snowy Pines Lodge, CO', NULL, '', 'Planned', 250, 5000.00, '2025-06-01 21:10:00', 1, 3),
 (35, 'Ahmed Birthday', '2025-06-13', 'Snowy Pines Lodge, CO', NULL, '', 'Ongoing', 45, 1000.00, '2025-06-01 21:42:23', 2, 2),
-(36, 'Abdelhay', '2025-06-29', 'Tangier', NULL, '', 'Planned', 50, 4999.00, '2025-06-01 22:30:54', 2, 2),
+(36, 'Abdelhay', '2025-06-29', 'Tangier', NULL, '', 'Completed', 50, 4999.00, '2025-06-01 22:30:54', 2, 2),
 (37, 'abdelhay wedding', '2025-06-09', 'tangier', NULL, '', 'Planned', 454, 6000.00, '2025-06-02 20:09:13', 2, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `oauth_providers`
+--
+
+CREATE TABLE `oauth_providers` (
+  `id_oauth` int(11) NOT NULL,
+  `id_client` int(11) NOT NULL,
+  `provider` varchar(50) NOT NULL,
+  `provider_id` varchar(255) NOT NULL,
+  `provider_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`provider_data`)),
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `oauth_providers`
+--
+
+INSERT INTO `oauth_providers` (`id_oauth`, `id_client`, `provider`, `provider_id`, `provider_data`, `created_at`) VALUES
+(1, 3, 'google', '108872080932087569926', '{\"name\":\"MALLOULI Abdelhay\",\"given_name\":\"MALLOULI\",\"family_name\":\"Abdelhay\",\"picture\":\"https:\\/\\/lh3.googleusercontent.com\\/a\\/ACg8ocIiZyWUFyvCLypF_bTKgbGn80mBa054_y5k0Wjw2nfIeBNa8Q=s96-c\",\"email\":\"mallouli.abdelhay.solicode@gmail.com\"}', '2025-06-19 14:50:33');
 
 -- --------------------------------------------------------
 
@@ -134,7 +157,6 @@ CREATE TABLE `request` (
 --
 
 INSERT INTO `request` (`id_request`, `title`, `description`, `deadline`, `status`, `id_event`, `id_transaction`, `id_vendor`) VALUES
-(10, 'Confirm details with Elite Catering', NULL, NULL, 'In Progress', 24, 33, 1),
 (11, 'Confirm details with Starlight Decor', NULL, NULL, 'In Progress', 24, 34, 2),
 (12, 'Confirm details with Bliss Photography', NULL, NULL, 'Cancelled', 24, 35, 4),
 (13, 'Confirm details with Tasty Treats', NULL, NULL, 'In Progress', 28, 4, 6),
@@ -150,8 +172,8 @@ INSERT INTO `request` (`id_request`, `title`, `description`, `deadline`, `status
 (23, 'Confirm details with Tasty Treats', NULL, NULL, 'Open', 30, 14, 6),
 (24, 'Confirm details with Chic Designs', NULL, NULL, 'Open', 30, 15, 16),
 (25, 'Confirm details with Sparkle Events', NULL, NULL, 'Open', 30, 16, 18),
-(32, 'Confirm details with Elite Catering', NULL, NULL, 'Open', 11, 23, 1),
-(33, 'Confirm details with Starlight Decor', NULL, NULL, 'Open', 11, 24, 2),
+(32, 'Confirm details with Elite Catering', NULL, NULL, 'In Progress', 11, 23, 1),
+(33, 'Confirm details with Starlight Decor', NULL, NULL, 'In Progress', 11, 24, 2),
 (34, 'Confirm details with Bliss Photography', NULL, NULL, 'Open', 11, 25, 4),
 (42, 'Photography', NULL, NULL, 'Open', 28, 36, 3),
 (43, 'Photography', NULL, NULL, 'Open', 15, 37, 4),
@@ -250,7 +272,7 @@ CREATE TABLE `vendor` (
 --
 
 INSERT INTO `vendor` (`id_vendor`, `name`, `category`, `description`, `phone`, `email`, `image`, `rating`, `creation_date`) VALUES
-(1, 'Elite Catering', 'Catering', 'Premium catering services for all events', '555-0101', 'contact@elitecatering.com', 'https://cdn.pixabay.com/photo/2016/03/27/18/53/drinks-1283608_1280.jpg', 4.80, '2025-05-30 19:33:39'),
+(1, 'Elite Catering', 'Catering', 'Premium catering services for all events', '555-0101', 'contact@elitecatering.com', 'https://cdn.pixabay.com/photo/2016/03/27/18/53/drinks-1283608_1280.jpg', 4.50, '2025-05-30 19:33:39'),
 (2, 'Starlight Decor', 'Decoration', 'Elegant decor solutions for memorable events', '555-0102', 'info@starlightdecor.com', 'https://cdn.pixabay.com/photo/2021/11/22/18/29/laser-show-6817130_1280.jpg', 4.60, '2025-05-30 19:33:39'),
 (3, 'Harmony Music', 'Music', 'Live music and DJ services', '555-0103', 'bookings@harmonymusic.com', 'https://cdn.pixabay.com/photo/2020/11/27/07/32/choir-5781096_1280.jpg', 4.70, '2025-05-30 19:33:39'),
 (4, 'Bliss Photography', 'Photography', 'Professional event photography', '555-0104', 'hello@blissphoto.com', 'https://www.weddedblissphotography.com/wp-content/uploads/2014/04/27-12610-pp_gallery/Vernon-Wedding-Photographer-Wedded-Bliss-Photography-www.weddedblissphotography.com-0160(pp_w799_h533).jpg', 4.90, '2025-05-30 19:33:39'),
@@ -289,7 +311,7 @@ CREATE TABLE `vendor_type` (
 
 INSERT INTO `vendor_type` (`id_vendor`, `id_type`, `price`) VALUES
 (1, 1, 1500.00),
-(1, 2, 800.00),
+(1, 2, 900.00),
 (1, 3, 2000.00),
 (1, 4, 1200.00),
 (2, 1, 1000.00),
@@ -397,6 +419,14 @@ ALTER TABLE `event`
   ADD KEY `event_date` (`event_date`);
 
 --
+-- Indexes for table `oauth_providers`
+--
+ALTER TABLE `oauth_providers`
+  ADD PRIMARY KEY (`id_oauth`),
+  ADD UNIQUE KEY `provider_unique` (`id_client`,`provider`),
+  ADD UNIQUE KEY `provider_id_unique` (`provider`,`provider_id`);
+
+--
 -- Indexes for table `request`
 --
 ALTER TABLE `request`
@@ -448,13 +478,19 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `client`
 --
 ALTER TABLE `client`
-  MODIFY `id_client` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_client` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `event`
 --
 ALTER TABLE `event`
   MODIFY `id_event` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+
+--
+-- AUTO_INCREMENT for table `oauth_providers`
+--
+ALTER TABLE `oauth_providers`
+  MODIFY `id_oauth` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `request`
@@ -490,6 +526,12 @@ ALTER TABLE `vendor`
 ALTER TABLE `event`
   ADD CONSTRAINT `event_ibfk_1` FOREIGN KEY (`id_client`) REFERENCES `client` (`id_client`) ON DELETE CASCADE,
   ADD CONSTRAINT `event_ibfk_2` FOREIGN KEY (`id_type`) REFERENCES `type` (`id_type`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `oauth_providers`
+--
+ALTER TABLE `oauth_providers`
+  ADD CONSTRAINT `oauth_providers_ibfk_1` FOREIGN KEY (`id_client`) REFERENCES `client` (`id_client`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `request`

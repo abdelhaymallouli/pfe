@@ -120,8 +120,6 @@ Fixe: (212) 0539 30 88 85\\
 Website: \url{https://solicode.co/}
 \end{center}
 
-
-
 \newpage
 
 % --- Abstract ---
@@ -251,48 +249,7 @@ The event and vendor management application employs a classic two-tier client-se
 \end{itemize}
 The data flow within this architecture is straightforward: the React Frontend sends requests to the PHP Backend's REST API. The Backend processes these requests, interacts with the MySQL Database as needed, and then sends a structured response (typically in JSON format) back to the Frontend. The Frontend then interprets this response and updates the user interface accordingly.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.7\textwidth]{database shema.png} % Replace with your image path
-    \caption{High-level System Architecture Diagram showing the interaction between the React Frontend, PHP Backend (REST API), and MySQL Database. Arrows indicate the direction of data flow.}
-    \label{fig:system_architecture_diagram}
-\end{figure}
 
-\section{Database Design}
-\label{sec:database_design}
-The foundation of any robust application lies in a well-structured database. The database for this event and vendor management system is designed to efficiently store and manage all relevant information, ensuring data integrity and facilitating quick retrieval. The schema is normalized to minimize redundancy and optimize performance. For a comprehensive understanding of the database structure, both the Conceptual Data Model (MCD) and the Logical Data Model (MLD) are presented.
-
-\subsection{Conceptual Data Model (MCD)}
-The MCD provides a high-level, abstract view of the data, focusing on the main entities, their attributes, and the relationships between them, independent of any specific database technology. It represents the business rules and data requirements in a clear, understandable format.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{mcd Venuvibe.png} % Replace with your image path
-    \caption{Conceptual Data Model (MCD) of the Venuvibe Database. This diagram illustrates the core entities such as Client, Event, Type, Vendor, Request, and Transaction, along with their relationships and cardinalities, providing a technology-agnostic view of the data structure.}
-    \label{fig:mcd_diagram}
-\end{figure}
-
-\subsection{Logical Data Model (MLD)}
-The MLD translates the conceptual model into a more detailed structure, representing how the data will be organized in a relational database. It defines tables, columns, primary keys, foreign keys, and the relationships between tables, reflecting the actual database schema. The MLD is a direct representation of the \texttt{database.sql} file.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{mld venuvibe.png} % Replace with your image path
-    \caption{Logical Data Model (MLD) of the Venuvibe Database. This diagram details the relational tables (\texttt{client}, \texttt{event}, \texttt{type}, \texttt{vendor}, \texttt{request}, \texttt{transaction}, \texttt{vendor\_type}, \texttt{categorizes}, \texttt{offers}, \texttt{assigned\_to}, \texttt{belongs\_to}), their attributes, primary keys, foreign keys, and the explicit relationships between them, forming the blueprint for the MySQL database.}
-    \label{fig:mld_diagram}
-\end{figure}
-
-As depicted in the MLD, the main tables include:
-\begin{itemize}
-    \item \textbf{client Table:} Stores information about system administrators, including their name, email, and securely hashed password. This table is crucial for managing administrative access to the system.
-    \item \textbf{event Table:} Contains all details pertaining to an event, such as its title, date, location, description, banner image, expected guests, and budget. Each event is linked to a specific \texttt{client} (event organizer) and an \texttt{event\_type}.
-    \item \textbf{type Table:} A lookup table that categorizes events (e.g., Wedding, Birthday, Corporate, Concert). This helps in organizing events and allows for easier filtering and searching.
-    \item \textbf{vendor Table:} Stores comprehensive profiles of service providers, including their name, category (e.g., Catering, Photography), description of services, contact information (phone, email), and an image. Vendors can also have a rating.
-    \item \textbf{request Table:} Facilitates the interaction between event organizers and vendors. When a client needs a service for an event, they create a request. This table links a specific event to a vendor and can be associated with a \texttt{transaction}.
-    \item \textbf{transaction Table:} Records financial transactions related to requests, such as the amount and date of a payment. Each transaction is linked to a specific \texttt{event}.
-    \item \textbf{vendor\_type Table:} This is an associative entity that links \texttt{vendor} and \texttt{type} entities, allowing a vendor to offer services for multiple event types and an event type to be associated with multiple vendors. It also includes a price attribute for the vendor's service for a specific type.
-\end{itemize}
-Relationships between these tables are established using foreign keys, ensuring referential integrity. For instance, \texttt{event.id\_client} is a foreign key referencing \texttt{client.id\_client}, indicating which client organized a particular event. Similarly, \texttt{event.id\_type} links an event to its category in the \texttt{type} table. The \texttt{request} table serves as a crucial junction, connecting \texttt{event}, \texttt{vendor}, and \texttt{transaction} records, thereby enabling a comprehensive tracking of service engagements. The \texttt{categorizes}, \texttt{offers}, \texttt{assigned\_to}, and \texttt{belongs\_to} tables represent the relationships between the main entities, detailing how events are categorized by types, vendors offer specific types of services, requests are assigned to vendors, and requests belong to events.
 
 \section{Use Case Analysis}
 \label{sec:use_case_analysis}
@@ -329,6 +286,52 @@ Use case analysis is a technique used to identify and describe the interactions 
     \end{itemize}
 \end{itemize}
 These use cases illustrate the distinct roles and responsibilities within the system, ensuring that each type of user has the necessary tools to perform their tasks effectively while maintaining the security and integrity of the application.
+
+\section{Conceptual Data Model (MCD)}
+\label{sec:conceptual_data_model}
+The MCD provides a high-level, abstract view of the data, focusing on the main entities, their attributes, and the relationships between them, independent of any specific database technology. It represents the business rules and data requirements in a clear, understandable format.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{mcd Venuvibe.png} % Replace with your image path
+    \caption{Conceptual Data Model (MCD) of the Venuvibe Database. This diagram illustrates the core entities such as Client, Event, Type, Vendor, Request, and Transaction, along with their relationships and cardinalities, providing a technology-agnostic view of the data structure.}
+    \label{fig:mcd_diagram}
+\end{figure}
+
+
+\section{Logical Data Model (MLD)}
+\label{sec:logical_data_model}
+The MLD translates the conceptual model into a more detailed structure, representing how the data will be organized in a relational database. It defines tables, columns, primary keys, foreign keys, and the relationships between tables, reflecting the actual database schema. The MLD is a direct representation of the \texttt{database.sql} file.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{mld venuvibe.png} % Replace with your image path
+    \caption{Logical Data Model (MLD) of the Venuvibe Database. This diagram details the relational tables (\texttt{client}, \texttt{event}, \texttt{type}, \texttt{vendor}, \texttt{request}, \texttt{transaction}, \texttt{vendor\_type}, \texttt{categorizes}, \texttt{offers}, \texttt{assigned\_to}, \texttt{belongs\_to}), their attributes, primary keys, foreign keys, and the explicit relationships between them, forming the blueprint for the MySQL database.}
+    \label{fig:mld_diagram}
+\end{figure}
+
+\section{Database Design}
+\label{sec:database_design}
+The foundation of any robust application lies in a well-structured database. The database for this event and vendor management system is designed to efficiently store and manage all relevant information, ensuring data integrity and facilitating quick retrieval. The schema is normalized to minimize redundancy and optimize performance. For a comprehensive understanding of the database structure, both the Conceptual Data Model (MCD) and the Logical Data Model (MLD) are presented above.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{database shema.png} % Replace with your image path
+    \caption{High-level System Architecture Diagram showing the interaction between the React Frontend, PHP Backend (REST API), and MySQL Database. Arrows indicate the direction of data flow.}
+    \label{fig:system_architecture_diagram}
+\end{figure}
+
+As depicted in the MLD, the main tables include:
+\begin{itemize}
+    \item \textbf{client Table:} Stores information about system administrators, including their name, email, and securely hashed password. This table is crucial for managing administrative access to the system.
+    \item \textbf{event Table:} Contains all details pertaining to an event, such as its title, date, location, description, banner image, expected guests, and budget. Each event is linked to a specific \texttt{client} (event organizer) and an \texttt{event\_type}.
+    \item \textbf{type Table:} A lookup table that categorizes events (e.g., Wedding, Birthday, Corporate, Concert). This helps in organizing events and allows for easier filtering and searching.
+    \item \textbf{vendor Table:} Stores comprehensive profiles of service providers, including their name, category (e.g., Catering, Photography), description of services, contact information (phone, email), and an image. Vendors can also have a rating.
+    \item \textbf{request Table:} Facilitates the interaction between event organizers and vendors. When a client needs a service for an event, they create a request. This table links a specific event to a vendor and can be associated with a \texttt{transaction}.
+    \item \textbf{transaction Table:} Records financial transactions related to requests, such as the amount and date of a payment. Each transaction is linked to a specific \texttt{event}.
+    \item \textbf{vendor\_type Table:} This is an associative entity that links \texttt{vendor} and \texttt{type} entities, allowing a vendor to offer services for multiple event types and an event type to be associated with multiple vendors. It also includes a price attribute for the vendor's service for a specific type.
+\end{itemize}
+Relationships between these tables are established using foreign keys, ensuring referential integrity. For instance, \texttt{event.id\_client} is a foreign key referencing \texttt{client.id\_client}, indicating which client organized a particular event. Similarly, \texttt{event.id\_type} links an event to its category in the \texttt{type} table. The \texttt{request} table serves as a crucial junction, connecting \texttt{event}, \texttt{vendor}, and \texttt{transaction} records, thereby enabling a comprehensive tracking of service engagements. The \texttt{categorizes}, \texttt{offers}, \texttt{assigned\_to}, and \texttt{belongs\_to} tables represent the relationships between the main entities, detailing how events are categorized by types, vendors offer specific types of services, requests are assigned to vendors, and requests belong to events.
 
 \chapter{Implementation}
 \label{chap:implementation}
@@ -747,6 +750,5 @@ While the current application provides a solid foundation for event and vendor m
     \item \textbf{Calendar Integration:} Allowing users to integrate their event schedules with external calendar applications (e.g., Google Calendar, Outlook Calendar) would improve personal organization and reminders.
 \end{itemize}
 These proposed future enhancements would build upon the current successful implementation, transforming the application into an even more powerful and indispensable tool for the event and vendor management ecosystem.
-
 
 \end{document}

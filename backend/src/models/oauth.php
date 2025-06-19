@@ -7,73 +7,93 @@ class OAuth {
         $this->conn = $db;
     }
 
-    // Find user by OAuth provider and provider ID
-    public function findUserByOAuth($provider, $provider_id) {
-        $query = "SELECT c.id_client, c.name as username, c.email 
-                  FROM client c
-                  INNER JOIN " . $this->table_name . " o 
-                  ON c.id_client = o.id_client 
-                  WHERE o.provider = :provider AND o.provider_id = :provider_id 
-                  LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":provider", $provider);
-        $stmt->bindParam(":provider_id", $provider_id);
-        $stmt->execute();
-
-        if ($stmt->rowCount() > 0) {
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        }
-        return false;
-    }
-
-    // Link OAuth provider to an existing user
-    public function linkProviderToUser($user_id, $provider, $provider_id, $provider_data) {
-        $query = "INSERT INTO " . $this->table_name . " 
-                  (id_client, provider, provider_id, provider_data) 
-                  VALUES (:id_client, :provider, :provider_id, :provider_data)";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id_client", $user_id);
-        $stmt->bindParam(":provider", $provider);
-        $stmt->bindParam(":provider_id", $provider_id);
-        $stmt->bindParam(":provider_data", $provider_data);
-        return $stmt->execute();
-    }
-
-    // Create a new user with OAuth data
-    public function createUserWithOAuth($provider, $provider_id, $email, $username, $provider_data) {
-        // First, create the user in the client table
-        $user = new User($this->conn);
-        $user->name = $username;
-        $user->email = $email;
-        $user->password = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT); // Random password
-        if (!$user->create()) {
+    public function findUserByOAuth($provider, $providerId) {
+        try {
+            $query = "SELECT c.id_client, c.name AS username FROM oauth_providers op 
+                      JOIN clients c ON op.id_client = c.id_client 
+                      WHERE op.provider = :provider AND op.provider_id = :provider_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':provider', $provider);
+            $stmt->bindParam(':provider_id', $providerId);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            error_log("findUserByOAuth: provider=$provider, provider_id=$providerId, result=" . json_encode($result));
+            return $result;
+        } catch (PDOException $e) {
+            error_log("findUserByOAuth error: " . $e->getMessage());
             return false;
         }
-
-        // Link the OAuth provider
-        $this->linkProviderToUser($user->id, $provider, $provider_id, $provider_data);
-        return $user->id;
     }
 
-    // Get OAuth providers for a user
-    public function getUserProviders($user_id) {
-        $query = "SELECT provider, provider_id, provider_data 
-                  FROM " . $this->table_name . " 
-                  WHERE id_client = :id_client";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id_client", $user_id);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    public function linkProviderToUser($userId, $provider, $providerId, $providerData) {
+        try {
+            $query = "INSERT INTO oauth_providers (id_client, provider, provider_id, provider_data) 
+                      VALUES (:id_client, :provider, :provider_id, :provider_data)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id_client', $userId, PDO::PARAM_INT);
+            $stmt->bindParam(':provider', $provider);
+            $stmt->bindParam(':provider_id', $providerId);
+            $stmt->bindParam(':provider_data', $providerData);
+            $result = $stmt->execute();
+            error_log("linkProviderToUser: userId=$userId, provider=$provider, result=" . ($result ? 'success' : 'failed'));
+            return $result;
+        } catch (PDOException $e) {
+            error_log("linkProviderToUser error: " . $e->getMessage());
+            return false;
+        }
     }
 
-    // Unlink an OAuth provider
-    public function unlinkProvider($user_id, $provider) {
-        $query = "DELETE FROM " . $this->table_name . " 
-                  WHERE id_client = :id_client AND provider = :provider";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id_client", $user_id);
-        $stmt->bindParam(":provider", $provider);
-        return $stmt->execute();
+    public function createUserWithOAuth($provider, $providerId, $email, $username, $providerData) {
+        try {
+            $this->conn->beginTransaction();
+
+            $query = "INSERT INTO clients (email, name) VALUES (:email, :name)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':name', $username);
+            $stmt->execute();
+            $userId = $this->conn->lastInsertId();
+
+            $query = "INSERT INTO oauth_providers (id_client, provider, provider_id, provider_data) 
+                      VALUES (:id_client, :provider, :provider_id, :provider_data)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id_client', $userId, PDO::PARAM_INT);
+            $stmt->bindParam(':provider', $provider);
+            $stmt->bindParam(':provider_id', $providerId);
+            $stmt->bindParam(':provider_data', $providerData);
+            $stmt->execute();
+
+            $this->conn->commit();
+            error_log("createUserWithOAuth: userId=$userId, email=$email, provider=$provider");
+            return $userId;
+        } catch (PDOException $e) {
+            $this->conn->rollback();
+            error_log("createUserWithOAuth error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getUserProviders($userId) {
+        try {
+            $query = "SELECT provider FROM oauth_providers WHERE id_client = :id_client";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id_client', $userId, PDO::PARAM_INT);
+            error_log("getUserProviders: userId=$userId, query=$query");
+            if (!$stmt->execute()) {
+                error_log("getUserProviders: Execute failed for userId=$userId");
+                return [];
+            }
+            $providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("getUserProviders: userId=$userId, raw providers=" . json_encode($providers));
+            $result = array_map(function($provider) {
+                return ['provider' => $provider['provider']];
+            }, $providers);
+            error_log("getUserProviders: userId=$userId, mapped providers=" . json_encode($result));
+            return $result;
+        } catch (PDOException $e) {
+            error_log("getUserProviders error: userId=$userId, message=" . $e->getMessage());
+            return [];
+        }
     }
 }
 ?>
